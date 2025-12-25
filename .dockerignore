@@ -1,0 +1,6 @@
+node_modules
+npm-debug.log
+storage_state.json
+.git
+.env
+public/screenshots
