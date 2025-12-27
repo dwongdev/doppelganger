@@ -10,6 +10,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
+# Build frontend assets
+RUN npm run build
+
 # Copy the rest of the application
 COPY . .
 
