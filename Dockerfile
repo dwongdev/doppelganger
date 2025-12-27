@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (including session-file-store used by server.js)
-RUN npm ci && npm install session-file-store
+# Install dependencies
+RUN npm ci
 
 # Copy the rest of the application
 COPY . .
