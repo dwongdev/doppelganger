@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright:v1.40.0-focal AS build
+FROM node:22-bullseye AS build
 
 WORKDIR /app
 
@@ -21,8 +21,6 @@ RUN npm ci --omit=dev
 # Copy server and built assets
 COPY --from=build /app/dist /app/dist
 COPY --from=build /app/public /app/public
-COPY --from=build /app/data /app/data
-COPY --from=build /app/storage_state.json /app/storage_state.json
 COPY --from=build /app/*.js /app/
 
 EXPOSE 11345
