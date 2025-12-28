@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trash2, Database, Image as ImageIcon } from 'lucide-react';
+import { Trash2, Database, Image as ImageIcon, Eye, EyeOff, Copy } from 'lucide-react';
 
 interface SettingsScreenProps {
     onClearStorage: (type: 'screenshots' | 'cookies') => void;
@@ -21,6 +21,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
     const [apiKey, setApiKey] = useState<string | null>(null);
     const [apiKeyLoading, setApiKeyLoading] = useState(false);
     const [apiKeySaving, setApiKeySaving] = useState(false);
+    const [apiKeyVisible, setApiKeyVisible] = useState(false);
 
     const loadData = async () => {
         setDataLoading(true);
@@ -136,7 +137,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
     const copyApiKey = async () => {
         if (!apiKey) return;
         try {
-            await navigator.clipboard.writeText(apiKey);
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(apiKey);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = apiKey;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                if (!ok) throw new Error('Copy failed');
+            }
             onNotify('API key copied.', 'success');
         } catch {
             onNotify('Copy failed.', 'error');
@@ -180,8 +193,23 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                                 </div>
                             </div>
                             <div className="flex flex-col gap-4">
-                                <div className="rounded-2xl bg-black/40 border border-white/10 px-4 py-3 font-mono text-[10px] text-blue-200/80 break-all min-h-[44px]">
-                                    {apiKeyLoading ? 'Loading...' : (apiKey || 'No API key set')}
+                                <div className="rounded-2xl bg-black/40 border border-white/10 px-4 py-3 font-mono text-[10px] text-blue-200/80 break-all min-h-[44px] flex items-center justify-between gap-3">
+                                    <span>
+                                        {apiKeyLoading
+                                            ? 'Loading...'
+                                            : (apiKey
+                                                ? (apiKeyVisible ? apiKey : '•'.repeat(Math.max(12, apiKey.length)))
+                                                : 'No API key set')}
+                                    </span>
+                                    <button
+                                        onClick={() => setApiKeyVisible((prev) => !prev)}
+                                        disabled={!apiKey}
+                                        className="p-2 rounded-xl border border-white/10 text-white/70 hover:text-white hover:bg-white/5 transition-all disabled:opacity-50"
+                                        title={apiKeyVisible ? 'Hide key' : 'Show key'}
+                                        aria-label={apiKeyVisible ? 'Hide key' : 'Show key'}
+                                    >
+                                        {apiKeyVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
                                 <div className="flex gap-3">
                                     <button
@@ -194,8 +222,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                                     <button
                                         onClick={copyApiKey}
                                         disabled={!apiKey}
-                                        className="flex-1 px-6 py-3 rounded-2xl text-[9px] font-bold uppercase tracking-widest border border-white/10 text-white hover:bg-white/5 transition-all disabled:opacity-50"
+                                        className="flex-1 px-6 py-3 rounded-2xl text-[9px] font-bold uppercase tracking-widest border border-white/10 text-white hover:bg-white/5 transition-all disabled:opacity-50 inline-flex items-center justify-center gap-2"
                                     >
+                                        <Copy className="w-4 h-4" />
                                         Copy Key
                                     </button>
                                 </div>
