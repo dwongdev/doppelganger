@@ -4,6 +4,17 @@ const fs = require('fs');
 const path = require('path');
 
 const STORAGE_STATE_PATH = path.join(__dirname, 'storage_state.json');
+const STORAGE_STATE_FILE = (() => {
+    try {
+        if (fs.existsSync(STORAGE_STATE_PATH)) {
+            const stat = fs.statSync(STORAGE_STATE_PATH);
+            if (stat.isDirectory()) {
+                return path.join(STORAGE_STATE_PATH, 'storage_state.json');
+            }
+        }
+    } catch {}
+    return STORAGE_STATE_PATH;
+})();
 
 const userAgents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
@@ -58,8 +69,8 @@ async function handleScrape(req, res) {
             permissions: ['geolocation']
         };
 
-        if (fs.existsSync(STORAGE_STATE_PATH)) {
-            contextOptions.storageState = STORAGE_STATE_PATH;
+        if (fs.existsSync(STORAGE_STATE_FILE)) {
+            contextOptions.storageState = STORAGE_STATE_FILE;
         }
 
         const context = await browser.newContext(contextOptions);
@@ -297,7 +308,7 @@ async function handleScrape(req, res) {
         };
 
         // Save session state
-        await context.storageState({ path: STORAGE_STATE_PATH });
+        await context.storageState({ path: STORAGE_STATE_FILE });
 
         await browser.close();
         res.json(data);

@@ -40,6 +40,17 @@ function saveUsers(users) {
 const TASKS_FILE = path.join(__dirname, 'data', 'tasks.json');
 const API_KEY_FILE = path.join(__dirname, 'data', 'api_key.json');
 const STORAGE_STATE_PATH = path.join(__dirname, 'storage_state.json');
+const STORAGE_STATE_FILE = (() => {
+    try {
+        if (fs.existsSync(STORAGE_STATE_PATH)) {
+            const stat = fs.statSync(STORAGE_STATE_PATH);
+            if (stat.isDirectory()) {
+                return path.join(STORAGE_STATE_PATH, 'storage_state.json');
+            }
+        }
+    } catch {}
+    return STORAGE_STATE_PATH;
+})();
 const MAX_TASK_VERSIONS = 30;
 const EXECUTIONS_FILE = path.join(__dirname, 'data', 'executions.json');
 const MAX_EXECUTIONS = 500;
@@ -323,8 +334,8 @@ app.post('/api/clear-screenshots', requireAuth, (req, res) => {
 });
 
 app.post('/api/clear-cookies', requireAuth, (req, res) => {
-    if (fs.existsSync(STORAGE_STATE_PATH)) {
-        fs.unlinkSync(STORAGE_STATE_PATH);
+    if (fs.existsSync(STORAGE_STATE_FILE)) {
+        fs.unlinkSync(STORAGE_STATE_FILE);
     }
     res.json({ success: true });
 });
@@ -459,9 +470,9 @@ app.delete('/api/data/screenshots/:name', requireAuth, (req, res) => {
 });
 
 app.get('/api/data/cookies', requireAuth, (req, res) => {
-    if (!fs.existsSync(STORAGE_STATE_PATH)) return res.json({ cookies: [], origins: [] });
+    if (!fs.existsSync(STORAGE_STATE_FILE)) return res.json({ cookies: [], origins: [] });
     try {
-        const data = JSON.parse(fs.readFileSync(STORAGE_STATE_PATH, 'utf8'));
+        const data = JSON.parse(fs.readFileSync(STORAGE_STATE_FILE, 'utf8'));
         res.json({
             cookies: Array.isArray(data.cookies) ? data.cookies : [],
             origins: Array.isArray(data.origins) ? data.origins : []
@@ -474,9 +485,9 @@ app.get('/api/data/cookies', requireAuth, (req, res) => {
 app.post('/api/data/cookies/delete', requireAuth, (req, res) => {
     const { name, domain, path: cookiePath } = req.body || {};
     if (!name) return res.status(400).json({ error: 'MISSING_NAME' });
-    if (!fs.existsSync(STORAGE_STATE_PATH)) return res.json({ success: true });
+    if (!fs.existsSync(STORAGE_STATE_FILE)) return res.json({ success: true });
     try {
-        const data = JSON.parse(fs.readFileSync(STORAGE_STATE_PATH, 'utf8'));
+        const data = JSON.parse(fs.readFileSync(STORAGE_STATE_FILE, 'utf8'));
         const cookies = Array.isArray(data.cookies) ? data.cookies : [];
         const filtered = cookies.filter((cookie) => {
             if (cookie.name !== name) return true;
@@ -485,7 +496,7 @@ app.post('/api/data/cookies/delete', requireAuth, (req, res) => {
             return false;
         });
         data.cookies = filtered;
-        fs.writeFileSync(STORAGE_STATE_PATH, JSON.stringify(data, null, 2));
+        fs.writeFileSync(STORAGE_STATE_FILE, JSON.stringify(data, null, 2));
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: 'DELETE_FAILED' });

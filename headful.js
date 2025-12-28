@@ -3,6 +3,17 @@ const fs = require('fs');
 const path = require('path');
 
 const STORAGE_STATE_PATH = path.join(__dirname, 'storage_state.json');
+const STORAGE_STATE_FILE = (() => {
+    try {
+        if (fs.existsSync(STORAGE_STATE_PATH)) {
+            const stat = fs.statSync(STORAGE_STATE_PATH);
+            if (stat.isDirectory()) {
+                return path.join(STORAGE_STATE_PATH, 'storage_state.json');
+            }
+        }
+    } catch {}
+    return STORAGE_STATE_PATH;
+})();
 
 // Use a consistent User Agent or the same pool
 const userAgents = [
@@ -41,9 +52,9 @@ async function handleHeadful(req, res) {
             timezoneId: 'America/New_York'
         };
 
-        if (fs.existsSync(STORAGE_STATE_PATH)) {
+        if (fs.existsSync(STORAGE_STATE_FILE)) {
             console.log('Loading existing storage state...');
-            contextOptions.storageState = STORAGE_STATE_PATH;
+            contextOptions.storageState = STORAGE_STATE_FILE;
         }
 
         const context = await browser.newContext(contextOptions);
@@ -57,7 +68,7 @@ async function handleHeadful(req, res) {
         // Function to save state
         const saveState = async () => {
             try {
-                await context.storageState({ path: STORAGE_STATE_PATH });
+                await context.storageState({ path: STORAGE_STATE_FILE });
                 console.log('Storage state saved successfully.');
             } catch (e) {
                 // If context is closed, this will fail, which is expected during shutdown
@@ -79,7 +90,7 @@ async function handleHeadful(req, res) {
         res.json({
             message: 'Headful session started. Close the browser window or call /headful/stop to end.',
             userAgentUsed: selectedUA,
-            path: STORAGE_STATE_PATH
+            path: STORAGE_STATE_FILE
         });
 
         // Wait for the browser to disconnect (user closes the last window)
@@ -106,7 +117,7 @@ async function stopHeadful(req, res) {
     try {
         if (activeSession.interval) clearInterval(activeSession.interval);
         if (activeSession.context) {
-            await activeSession.context.storageState({ path: STORAGE_STATE_PATH });
+            await activeSession.context.storageState({ path: STORAGE_STATE_FILE });
         }
     } catch {}
 
