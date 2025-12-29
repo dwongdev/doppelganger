@@ -105,46 +105,113 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const [versions, setVersions] = useState<{ id: string; timestamp: number; name: string; mode: TaskMode }[]>([]);
     const [versionsLoading, setVersionsLoading] = useState(false);
 
-    const getResultsDataText = (payload: Results | null) => {
-        if (!payload || payload.data === undefined || payload.data === null) return '';
+    const MAX_PREVIEW_CHARS = 60000;
+    const MAX_PREVIEW_ITEMS = 200;
+    const MAX_PREVIEW_KEYS = 200;
+    const MAX_COPY_CHARS = 1000000;
+    const MAX_COPY_ITEMS = 2000;
+    const MAX_COPY_KEYS = 2000;
+
+    const formatSize = (chars: number) => `${(chars / (1024 * 1024)).toFixed(2)} MB`;
+
+    const clampText = (text: string, limit: number) => {
+        if (text.length <= limit) return { text, truncated: false };
+        return { text: text.slice(0, limit), truncated: true };
+    };
+
+    const getResultsCopyText = (payload: Results | null) => {
+        if (!payload || payload.data === undefined || payload.data === null) return { reason: 'No data to copy.' };
         const raw = payload.data;
-        if (typeof raw === 'string') return raw;
+        if (typeof raw === 'string') return { text: raw };
+        if (Array.isArray(raw) && raw.length > MAX_COPY_ITEMS) {
+            return { reason: `Array has ${raw.length} items.` };
+        }
+        if (raw && typeof raw === 'object') {
+            const keys = Object.keys(raw);
+            if (keys.length > MAX_COPY_KEYS) {
+                return { reason: `Object has ${keys.length} keys.` };
+            }
+        }
         try {
-            return JSON.stringify(raw, null, 2);
+            return { text: JSON.stringify(raw, null, 2) };
         } catch {
-            return String(raw);
+            return { text: String(raw) };
         }
     };
 
-    const handleCopy = (text: string, id: string) => {
-        console.log(`Attempting to copy for ${id}:`, text ? "Text present" : "Text EMPTY");
-        if (!text) return;
-
-        const performCopy = async () => {
-            try {
-                if (navigator.clipboard && window.isSecureContext) {
-                    await navigator.clipboard.writeText(text);
-                } else {
-                    // Fallback to execCommand
-                    const textArea = document.createElement("textarea");
-                    textArea.value = text;
-                    textArea.style.position = "fixed";
-                    textArea.style.left = "-999999px";
-                    textArea.style.top = "-999999px";
-                    document.body.appendChild(textArea);
-                    textArea.focus();
-                    textArea.select();
-                    document.execCommand('copy');
-                    textArea.remove();
-                }
-                setCopied(id);
-                setTimeout(() => setCopied(null), 2000);
-            } catch (err) {
-                console.error('Copy failed:', err);
+    const getResultsPreview = (payload: Results | null) => {
+        if (!payload || payload.data === undefined || payload.data === null || payload.data === '') {
+            return { text: '', truncated: false, language: 'plain' as const };
+        }
+        const raw = payload.data;
+        if (typeof raw === 'string') {
+            const trimmed = raw.trim();
+            const language = trimmed.startsWith('<') && trimmed.includes('>') ? 'html' : (trimmed.startsWith('{') || trimmed.startsWith('[')) ? 'json' : 'plain';
+            const clamped = clampText(raw, MAX_PREVIEW_CHARS);
+            return { text: clamped.text, truncated: clamped.truncated, language };
+        }
+        if (Array.isArray(raw)) {
+            const sliced = raw.length > MAX_PREVIEW_ITEMS ? raw.slice(0, MAX_PREVIEW_ITEMS) : raw;
+            const text = JSON.stringify(sliced, null, 2);
+            const clamped = clampText(text, MAX_PREVIEW_CHARS);
+            return { text: clamped.text, truncated: clamped.truncated || raw.length > MAX_PREVIEW_ITEMS, language: 'json' as const };
+        }
+        if (raw && typeof raw === 'object') {
+            const keys = Object.keys(raw);
+            let snapshot = raw;
+            let truncated = false;
+            if (keys.length > MAX_PREVIEW_KEYS) {
+                truncated = true;
+                snapshot = keys.slice(0, MAX_PREVIEW_KEYS).reduce<Record<string, any>>((acc, key) => {
+                    acc[key] = (raw as Record<string, any>)[key];
+                    return acc;
+                }, {});
             }
-        };
+            const text = JSON.stringify(snapshot, null, 2);
+            const clamped = clampText(text, MAX_PREVIEW_CHARS);
+            return { text: clamped.text, truncated: clamped.truncated || truncated, language: 'json' as const };
+        }
+        const clamped = clampText(String(raw), MAX_PREVIEW_CHARS);
+        return { text: clamped.text, truncated: clamped.truncated, language: 'plain' as const };
+    };
 
-        performCopy();
+    const handleCopy = async (text: string, id: string) => {
+        if (!text) {
+            onNotify('Nothing to copy.', 'error');
+            return;
+        }
+        let copyText = text;
+        if (text.length > MAX_COPY_CHARS) {
+            const confirmed = await onConfirm(`Copying ${formatSize(text.length)} may freeze your browser. Copy the first ${formatSize(MAX_COPY_CHARS)} instead?`);
+            if (!confirmed) return;
+            copyText = text.slice(0, MAX_COPY_CHARS);
+        }
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(copyText);
+            } else {
+                // Fallback to execCommand
+                const textArea = document.createElement("textarea");
+                textArea.value = copyText;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand('copy');
+                textArea.remove();
+            }
+            setCopied(id);
+            setTimeout(() => setCopied(null), 2000);
+            if (copyText.length !== text.length) {
+                onNotify('Copied a truncated preview.', 'success');
+            }
+        } catch (err) {
+            console.error('Copy failed:', err);
+            onNotify('Copy failed.', 'error');
+        }
     };
 
     const addAction = () => {
@@ -747,7 +814,7 @@ return JSON.stringify(links, null, 2);`}
                             <div className="flex items-center justify-between mb-3">
                                 <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Protocol JSON</span>
                                 <button
-                                    onClick={() => handleCopy(JSON.stringify(currentTask, null, 2), 'json')}
+                                    onClick={() => { void handleCopy(JSON.stringify(currentTask, null, 2), 'json'); }}
                                     className={`px-4 py-2 border text-[9px] font-bold rounded-xl uppercase transition-all flex items-center gap-2 ${copied === 'json' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
                                 >
                                     {copied === 'json' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -785,7 +852,7 @@ return JSON.stringify(links, null, 2);`}
                                             <button
                                                 onClick={() => {
                                                     const url = currentTask.id ? `${window.location.origin}/tasks/${currentTask.id}/api` : '';
-                                                    if (url) handleCopy(url, 'endpoint');
+                                                    if (url) void handleCopy(url, 'endpoint');
                                                 }}
                                                 className={`px-4 py-2 border text-[9px] font-bold rounded-xl uppercase transition-all flex items-center gap-2 ${copied === 'endpoint' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
                                             >
@@ -800,7 +867,7 @@ return JSON.stringify(links, null, 2);`}
                                             <button onClick={() => {
                                                 const cleanVars: Record<string, any> = {};
                                                 Object.entries(currentTask.variables).forEach(([n, d]) => cleanVars[n] = d.value);
-                                                handleCopy(JSON.stringify({ variables: cleanVars }, null, 2), 'vars');
+                                                void handleCopy(JSON.stringify({ variables: cleanVars }, null, 2), 'vars');
                                             }} className={`px-4 py-2 border text-[9px] font-bold rounded-xl uppercase transition-all flex items-center gap-2 ${copied === 'vars' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}>
                                                 {copied === 'vars' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                                                 {copied === 'vars' ? 'Copied' : 'Copy'}
@@ -957,7 +1024,14 @@ return JSON.stringify(links, null, 2);`}
                             <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
                                 <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Data</span>
                                 <button
-                                    onClick={() => handleCopy(getResultsDataText(results), 'data')}
+                                    onClick={() => {
+                                        const { text, reason } = getResultsCopyText(results);
+                                        if (!text) {
+                                            onNotify(reason || 'Data too large to copy safely.', 'error');
+                                            return;
+                                        }
+                                        void handleCopy(text, 'data');
+                                    }}
                                     className={`px-3 py-2 border text-[9px] font-bold rounded-xl uppercase transition-all flex items-center gap-2 ${copied === 'data' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
                                     title="Copy extracted data"
                                 >
@@ -973,21 +1047,17 @@ return JSON.stringify(links, null, 2);`}
                                     if (!results || results.data === undefined || results.data === null || results.data === '') {
                                         return <pre className="font-mono text-[10px] text-blue-300/60 whitespace-pre-wrap leading-relaxed">No intelligence gathered.</pre>;
                                     }
-                                    const raw = results.data;
-                                    if (typeof raw === 'string') {
-                                        const trimmed = raw.trim();
-                                        if (trimmed.startsWith('<') && trimmed.includes('>')) {
-                                            return <CodeEditor readOnly value={raw} language="html" />;
-                                        }
-                                        if ((trimmed.startsWith('{') || trimmed.startsWith('['))) {
-                                            try {
-                                                const parsed = JSON.parse(raw);
-                                                return <CodeEditor readOnly value={JSON.stringify(parsed, null, 2)} language="json" />;
-                                            } catch { }
-                                        }
-                                        return <CodeEditor readOnly value={raw} language="plain" />;
-                                    }
-                                    return <CodeEditor readOnly value={JSON.stringify(raw, null, 2)} language="json" />;
+                                    const preview = getResultsPreview(results);
+                                    return (
+                                        <div className="space-y-2">
+                                            {preview.truncated && (
+                                                <div className="text-[8px] text-amber-300/80 uppercase tracking-widest">
+                                                    Preview truncated for performance.
+                                                </div>
+                                            )}
+                                            <CodeEditor readOnly value={preview.text} language={preview.language} />
+                                        </div>
+                                    );
                                 })()}
                             </div>
                         </div>
