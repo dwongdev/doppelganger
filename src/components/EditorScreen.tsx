@@ -105,6 +105,17 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const [versions, setVersions] = useState<{ id: string; timestamp: number; name: string; mode: TaskMode }[]>([]);
     const [versionsLoading, setVersionsLoading] = useState(false);
 
+    const getResultsDataText = (payload: Results | null) => {
+        if (!payload || payload.data === undefined || payload.data === null) return '';
+        const raw = payload.data;
+        if (typeof raw === 'string') return raw;
+        try {
+            return JSON.stringify(raw, null, 2);
+        } catch {
+            return String(raw);
+        }
+    };
+
     const handleCopy = (text: string, id: string) => {
         console.log(`Attempting to copy for ${id}:`, text ? "Text present" : "Text EMPTY");
         if (!text) return;
@@ -942,31 +953,43 @@ return JSON.stringify(links, null, 2);`}
                             </div>
                         </div>
 
-                        <div className="glass-card rounded-[32px] p-8">
-                            <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mb-6 block border-b border-white/5 pb-4">Data</span>
-                            {(() => {
-                                if (isExecuting && (!results || results.data === undefined)) {
-                                    return <pre className="font-mono text-[10px] text-blue-300/60 whitespace-pre-wrap leading-relaxed max-h-[400px] custom-scrollbar">Buffering data stream...</pre>;
-                                }
-                                if (!results || results.data === undefined || results.data === null || results.data === '') {
-                                    return <pre className="font-mono text-[10px] text-blue-300/60 whitespace-pre-wrap leading-relaxed max-h-[400px] custom-scrollbar">No intelligence gathered.</pre>;
-                                }
-                                const raw = results.data;
-                                if (typeof raw === 'string') {
-                                    const trimmed = raw.trim();
-                                    if (trimmed.startsWith('<') && trimmed.includes('>')) {
-                                        return <CodeEditor readOnly value={raw} language="html" className="max-h-[400px]" />;
+                        <div className="glass-card rounded-[32px] p-8 flex flex-col">
+                            <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
+                                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Data</span>
+                                <button
+                                    onClick={() => handleCopy(getResultsDataText(results), 'data')}
+                                    className={`px-3 py-2 border text-[9px] font-bold rounded-xl uppercase transition-all flex items-center gap-2 ${copied === 'data' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
+                                    title="Copy extracted data"
+                                >
+                                    {copied === 'data' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                    {copied === 'data' ? 'Copied' : 'Copy'}
+                                </button>
+                            </div>
+                            <div className="max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                                {(() => {
+                                    if (isExecuting && (!results || results.data === undefined)) {
+                                        return <pre className="font-mono text-[10px] text-blue-300/60 whitespace-pre-wrap leading-relaxed">Buffering data stream...</pre>;
                                     }
-                                    if ((trimmed.startsWith('{') || trimmed.startsWith('['))) {
-                                        try {
-                                            const parsed = JSON.parse(raw);
-                                            return <CodeEditor readOnly value={JSON.stringify(parsed, null, 2)} language="json" className="max-h-[400px]" />;
-                                        } catch { }
+                                    if (!results || results.data === undefined || results.data === null || results.data === '') {
+                                        return <pre className="font-mono text-[10px] text-blue-300/60 whitespace-pre-wrap leading-relaxed">No intelligence gathered.</pre>;
                                     }
-                                    return <CodeEditor readOnly value={raw} language="plain" className="max-h-[400px]" />;
-                                }
-                                return <CodeEditor readOnly value={JSON.stringify(raw, null, 2)} language="json" className="max-h-[400px]" />;
-                            })()}
+                                    const raw = results.data;
+                                    if (typeof raw === 'string') {
+                                        const trimmed = raw.trim();
+                                        if (trimmed.startsWith('<') && trimmed.includes('>')) {
+                                            return <CodeEditor readOnly value={raw} language="html" />;
+                                        }
+                                        if ((trimmed.startsWith('{') || trimmed.startsWith('['))) {
+                                            try {
+                                                const parsed = JSON.parse(raw);
+                                                return <CodeEditor readOnly value={JSON.stringify(parsed, null, 2)} language="json" />;
+                                            } catch { }
+                                        }
+                                        return <CodeEditor readOnly value={raw} language="plain" />;
+                                    }
+                                    return <CodeEditor readOnly value={JSON.stringify(raw, null, 2)} language="json" />;
+                                })()}
+                            </div>
                         </div>
                     </div>
                 )}
