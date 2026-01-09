@@ -795,6 +795,8 @@ const novncDir = novncDirCandidates.find((candidate) => {
     }
 });
 const novncEnabled = !!novncDir;
+const NOVNC_PORT = Number(process.env.NOVNC_PORT) || 54311;
+const WEBSOCKIFY_PATH = '/websockify';
 if (novncDir) {
     app.use('/novnc', express.static(novncDir));
 }
@@ -836,6 +838,46 @@ const isPortAvailable = async (port) => {
     return true;
 };
 
+const proxyWebsockify = (req, socket, head) => {
+    if (!req || !req.url) return false;
+    if (!req.url.startsWith(WEBSOCKIFY_PATH)) return false;
+    const target = net.connect(NOVNC_PORT, '127.0.0.1');
+    const cleanup = () => {
+        try {
+            socket.destroy();
+        } catch {
+            // ignore
+        }
+        try {
+            target.destroy();
+        } catch {
+            // ignore
+        }
+    };
+    target.on('error', cleanup);
+    socket.on('error', cleanup);
+    target.on('connect', () => {
+        try {
+            target.write(`${req.method} ${req.url} HTTP/${req.httpVersion}\r\n`);
+            for (let i = 0; i < req.rawHeaders.length; i += 2) {
+                const name = req.rawHeaders[i];
+                const value = req.rawHeaders[i + 1];
+                if (name && value !== undefined) {
+                    target.write(`${name}: ${value}\r\n`);
+                }
+            }
+            target.write('\r\n');
+            if (head && head.length) {
+                target.write(head);
+            }
+            socket.pipe(target).pipe(socket);
+        } catch {
+            cleanup();
+        }
+    });
+    return true;
+};
+
 const findAvailablePort = (startPort, maxAttempts = 20) => new Promise((resolve, reject) => {
     let currentPort = startPort;
     const tryPort = async () => {
@@ -863,6 +905,12 @@ findAvailablePort(port, 20)
             const address = server.address();
             const displayPort = typeof address === 'object' && address ? address.port : availablePort;
             console.log(`Server running at http://localhost:${displayPort}`);
+        });
+        server.on('upgrade', (req, socket, head) => {
+            const handled = proxyWebsockify(req, socket, head);
+            if (!handled) {
+                socket.destroy();
+            }
         });
         server.on('error', (err) => {
             console.error('Server failed to start:', err.message || err);

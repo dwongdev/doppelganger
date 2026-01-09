@@ -370,7 +370,7 @@ const ResultsPane: React.FC<ResultsPaneProps> = ({ results, pinnedResults, isExe
 
     if (isHeadful && resultView === 'latest') {
         const { origin, hostname } = window.location;
-        const headfulUrl = `${origin}/novnc.html?host=${hostname}&port=54311&path=websockify`;
+        const headfulUrl = `${origin}/novnc.html?host=${hostname}&path=websockify`;
         if (headfulViewer === 'native') {
             return (
                 <div className="glass-card rounded-[32px] overflow-hidden h-[80vh] w-full relative flex items-center justify-center">

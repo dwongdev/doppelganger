@@ -77,10 +77,12 @@
 
       const params = new URLSearchParams(window.location.search);
       const host = params.get('host') || window.location.hostname;
-      const port = params.get('port') || '54311';
-      const path = params.get('path') || 'websockify';
+      const port = params.get('port') || window.location.port;
+      const rawPath = params.get('path') || 'websockify';
+      const path = rawPath.replace(/^\/+/, '');
       const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      const wsUrl = `${proto}://${host}:${port}/${path}`;
+      const hostPort = port ? `${host}:${port}` : host;
+      const wsUrl = `${proto}://${hostPort}/${path}`;
 
       const statusEl = document.getElementById('status');
       const screen = document.getElementById('screen');
