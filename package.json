@@ -2,14 +2,32 @@
   "name": "@doppelgangerdev/doppelganger",
   "version": "0.3.7",
   "main": "index.js",
+  "bin": {
+    "doppelganger": "bin/cli.js"
+  },
   "scripts": {
     "dev": "vite",
     "server": "node server.js",
     "start": "node server.js",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "postinstall": "node scripts/postinstall.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "files": [
+    "bin/cli.js",
+    "dist",
+    "public",
+    "server.js",
+    "agent.js",
+    "headful.js",
+    "scrape.js",
+    "start-vnc.sh",
+    "scripts/postinstall.js",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_LICENSES.md"
+  ],
   "keywords": [],
   "author": "",
   "license": "ISC",
