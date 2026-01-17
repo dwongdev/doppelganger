@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Install deps (include dev deps for build)
 COPY package*.json ./
+COPY scripts ./scripts
 ENV DOPPELGANGER_SKIP_PLAYWRIGHT_INSTALL=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 RUN npm ci --include=dev
@@ -18,6 +19,7 @@ WORKDIR /app
 
 # Install production deps only
 COPY package*.json ./
+COPY scripts ./scripts
 ENV DOPPELGANGER_SKIP_PLAYWRIGHT_INSTALL=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 RUN npm ci --omit=dev
