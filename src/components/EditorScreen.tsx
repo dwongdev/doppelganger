@@ -78,7 +78,7 @@ const VariableRow: React.FC<{
             <select
                 value={def.type}
                 onChange={(e) => updateVariable(name, name, e.target.value as VarType, def.value)}
-                className="var-type bg-white/[0.05] border border-white/10 rounded-lg px-2 py-2 text-[8px] font-bold uppercase text-white/40"
+                className="custom-select var-type bg-white/[0.05] border border-white/10 rounded-xl px-2 py-2 text-[8px] font-bold uppercase text-white/40"
             >
                 <option value="string">STR</option>
                 <option value="number">NUM</option>
@@ -89,7 +89,7 @@ const VariableRow: React.FC<{
                     <select
                         value={String(def.value)}
                         onChange={(e) => updateVariable(name, name, def.type, e.target.value)}
-                        className="custom-select w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white"
+                        className="custom-select w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white"
                     >
                         <option value="true">True</option>
                         <option value="false">False</option>
@@ -910,7 +910,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                                                     conditionValue: nextType === 'boolean' ? '' : action.conditionValue || ''
                                                                                 });
                                                                             }}
-                                                                            className="custom-select w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-[8px] font-bold uppercase text-white/60"
+                                                                            className="custom-select w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-[8px] font-bold uppercase text-white/60"
                                                                         >
                                                                             <option value="string">String</option>
                                                                             <option value="number">Number</option>
@@ -922,7 +922,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                                         <select
                                                                             value={opValue}
                                                                             onChange={(e) => updateAction(action.id, { conditionOp: e.target.value })}
-                                                                            className="custom-select w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-[8px] font-bold uppercase text-white/60"
+                                                                            className="custom-select w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-[8px] font-bold uppercase text-white/60"
                                                                         >
                                                                             {ops.map((opt) => (
                                                                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -1061,7 +1061,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                             <select
                                                                 value={action.value || 'success'}
                                                                 onChange={(e) => updateAction(action.id, { value: e.target.value })}
-                                                                className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-white/70 focus:outline-none"
+                                                                className="custom-select w-full bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-white/70 focus:outline-none"
                                                             >
                                                                 <option value="success">Success</option>
                                                                 <option value="error">Error</option>
@@ -1081,7 +1081,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                             <select
                                                                 value={action.value || ''}
                                                                 onChange={(e) => updateAction(action.id, { value: e.target.value })}
-                                                                className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-white/70 focus:outline-none"
+                                                                className="custom-select w-full bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-white/70 focus:outline-none"
                                                             >
                                                                 <option value="" disabled>Select task</option>
                                                                 {availableTasks.length === 0 && (
@@ -1226,7 +1226,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                         <select
                                             value={currentTask.extractionFormat || 'json'}
                                             onChange={(e) => setCurrentTask({ ...currentTask, extractionFormat: e.target.value as 'json' | 'csv' })}
-                                            className="custom-select bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-[8px] font-bold uppercase text-white/60"
+                                            className="custom-select bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-[8px] font-bold uppercase text-white/60"
                                         >
                                             <option value="json">JSON</option>
                                             <option value="csv">CSV</option>

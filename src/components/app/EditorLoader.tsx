@@ -83,7 +83,7 @@ const EditorLoader: React.FC<EditorLoaderProps> = ({ tasks, loadTasks, touchTask
         return <LoadingScreen title="Loading Mission Data" subtitle="Syncing task payload" />;
     }
 
-    return <EditorScreen currentTask={currentTask} setCurrentTask={setCurrentTask} {...props} />;
+    return <EditorScreen currentTask={currentTask} setCurrentTask={setCurrentTask} tasks={tasks} {...props} />;
 };
 
 export default EditorLoader;
