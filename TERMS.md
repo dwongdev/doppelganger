@@ -10,6 +10,7 @@ By using Doppelganger, you agree to the terms below.
    - You may not offer the software as a hosted service or SaaS product.
    - You may not redistribute the software for commercial hosting or competing products.
    - You may not sell or license the software as a standalone product or as part of any paid service.
+   - You may not use the software to steal, harvest, or exfiltrate IP addresses, credentials, or other sensitive data.
 
 3. No Warranty
    - The software is provided "as-is" without warranty of any kind, express or implied.

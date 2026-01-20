@@ -1,4 +1,4 @@
-# Doppelganger - Self-hosted Browser Automation 
+# Doppelganger - Browser Automation for Everyone
 
 [![Docker](https://img.shields.io/badge/docker-mnemosyneai%2Fdoppelganger-0db7ed)](https://hub.docker.com/r/mnemosyneai/doppelganger)
 [![Self-Hosted](https://img.shields.io/badge/self--hosted-local--first-2f855a)](#getting-started)
