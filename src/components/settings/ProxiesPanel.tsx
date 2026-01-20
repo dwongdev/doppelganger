@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ShieldCheck, Trash2, Star, StarOff, RefreshCw } from 'lucide-react';
 
 interface ProxyEntry {
@@ -16,6 +16,7 @@ interface ProxiesPanelProps {
     loading: boolean;
     onRefresh: () => void;
     onAdd: (entry: { server: string; username?: string; password?: string; label?: string }) => void;
+    onImport: (entries: { server: string; username?: string; password?: string; label?: string }[]) => void;
     onUpdate: (id: string, entry: { server: string; username?: string; password?: string; label?: string }) => void;
     onDelete: (id: string) => void;
     onSetDefault: (id: string | null) => void;
@@ -29,6 +30,7 @@ const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
     loading,
     onRefresh,
     onAdd,
+    onImport,
     onUpdate,
     onDelete,
     onSetDefault,
@@ -43,6 +45,8 @@ const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
     const [editUsername, setEditUsername] = useState('');
     const [editPassword, setEditPassword] = useState('');
     const [editLabel, setEditLabel] = useState('');
+    const [importError, setImportError] = useState('');
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const submit = () => {
         if (!server.trim()) return;
@@ -83,6 +87,54 @@ const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
             label: editLabel.trim() || undefined
         });
         cancelEdit();
+    };
+
+    const parseProxyLine = (line: string) => {
+        const trimmed = line.trim();
+        if (!trimmed) return null;
+        if (trimmed.includes('://')) {
+            return { server: trimmed };
+        }
+        const parts = trimmed.split(':');
+        if (parts.length < 2) return null;
+        const host = parts[0]?.trim();
+        const port = parts[1]?.trim();
+        if (!host || !port) return null;
+        const usernamePart = parts[2] ? parts[2].trim() : '';
+        const passwordPart = parts.length > 3 ? parts.slice(3).join(':').trim() : '';
+        return {
+            server: `${host}:${port}`,
+            username: usernamePart || undefined,
+            password: passwordPart || undefined
+        };
+    };
+
+    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(event.target.files || []);
+        if (!files.length) return;
+        try {
+            const contents = await Promise.all(files.map((file) => file.text()));
+            const rawLines = contents
+                .join('\n')
+                .split(/\r?\n/)
+                .flatMap((line) => line.split(/[,;]+/));
+            const entries = rawLines.map(parseProxyLine).filter(Boolean) as {
+                server: string;
+                username?: string;
+                password?: string;
+                label?: string;
+            }[];
+            if (entries.length === 0) {
+                setImportError('No valid proxies found in file.');
+                return;
+            }
+            setImportError('');
+            onImport(entries);
+        } catch {
+            setImportError('Failed to read file.');
+        } finally {
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
     };
 
     return (
@@ -145,12 +197,28 @@ const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
                     Add Proxy
                 </button>
                 <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-6 py-3 rounded-2xl text-[9px] font-bold uppercase tracking-widest border border-white/10 text-white hover:bg-white/5 transition-all"
+                >
+                    Import .txt
+                </button>
+                <button
                     onClick={() => onSetDefault('host')}
                     className={`px-6 py-3 rounded-2xl text-[9px] font-bold uppercase tracking-widest border border-white/10 transition-all ${defaultProxyId ? 'text-white hover:bg-white/5' : 'bg-white/10 text-white'}`}
                 >
                     Use Host IP
                 </button>
             </div>
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept=".txt,text/plain"
+                onChange={handleImport}
+                className="hidden"
+            />
+            {importError && (
+                <div className="text-[9px] text-red-400 uppercase tracking-widest">{importError}</div>
+            )}
             <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all cursor-pointer group">
                 <input
                     type="checkbox"

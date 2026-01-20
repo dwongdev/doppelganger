@@ -173,6 +173,42 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
         }
     };
 
+    const importProxies = async (entries: { server: string; username?: string; password?: string; label?: string }[]) => {
+        if (!entries.length) {
+            onNotify('No valid proxies found in file.', 'error');
+            return;
+        }
+        setProxiesLoading(true);
+        try {
+            const res = await fetch('/api/settings/proxies/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ proxies: entries })
+            });
+            if (!res.ok) {
+                let detail = '';
+                try {
+                    const data = await res.json();
+                    detail = data?.error || data?.message || '';
+                } catch {
+                    detail = '';
+                }
+                onNotify(`Failed to import proxies${detail ? `: ${detail}` : ''}.`, 'error');
+                return;
+            }
+            const data = await res.json();
+            setProxies(Array.isArray(data.proxies) ? data.proxies : []);
+            setDefaultProxyId(data.defaultProxyId || null);
+            setIncludeDefaultInRotation(!!data.includeDefaultInRotation);
+            onNotify('Proxies imported.', 'success');
+        } catch {
+            onNotify('Failed to import proxies.', 'error');
+        } finally {
+            setProxiesLoading(false);
+        }
+    };
+
     const updateProxy = async (id: string, entry: { server: string; username?: string; password?: string; label?: string }) => {
         setProxiesLoading(true);
         try {
@@ -401,6 +437,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                         loading={proxiesLoading}
                         onRefresh={loadProxies}
                         onAdd={addProxy}
+                        onImport={importProxies}
                         onUpdate={updateProxy}
                         onDelete={deleteProxy}
                         onSetDefault={setDefaultProxy}

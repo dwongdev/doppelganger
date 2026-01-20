@@ -321,7 +321,7 @@ const requireIpAllowlist = (req, res, next) => {
 const { handleScrape } = require('./scrape');
 const { handleAgent, setProgressReporter, setStopChecker } = require('./agent');
 const { handleHeadful, stopHeadful } = require('./headful');
-const { listProxies, addProxy, updateProxy, deleteProxy, setDefaultProxy, setIncludeDefaultInRotation } = require('./proxy-rotation');
+const { listProxies, addProxy, addProxies, updateProxy, deleteProxy, setDefaultProxy, setIncludeDefaultInRotation } = require('./proxy-rotation');
 
 setProgressReporter(sendExecutionUpdate);
 setStopChecker((runId) => {
@@ -496,6 +496,21 @@ app.post('/api/settings/proxies', requireAuthForSettings, (req, res) => {
     } catch (e) {
         console.error('[PROXIES] Add failed:', e);
         res.status(500).json({ error: 'PROXY_SAVE_FAILED' });
+    }
+});
+
+app.post('/api/settings/proxies/import', requireAuthForSettings, (req, res) => {
+    const entries = req.body && Array.isArray(req.body.proxies) ? req.body.proxies : [];
+    if (entries.length === 0) {
+        return res.status(400).json({ error: 'MISSING_PROXIES' });
+    }
+    try {
+        const result = addProxies(entries);
+        if (!result) return res.status(400).json({ error: 'INVALID_PROXY' });
+        res.json(listProxies());
+    } catch (e) {
+        console.error('[PROXIES] Import failed:', e);
+        res.status(500).json({ error: 'PROXY_IMPORT_FAILED' });
     }
 });
 

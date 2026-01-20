@@ -165,6 +165,20 @@ const addProxy = (entry) => {
     return saveProxyConfig(next);
 };
 
+const addProxies = (entries) => {
+    if (!Array.isArray(entries)) return null;
+    const normalizedEntries = entries.map(normalizeProxy).filter(Boolean);
+    if (normalizedEntries.length === 0) return null;
+    const config = loadProxyConfig();
+    const additions = normalizedEntries.map((proxy) => ({
+        ...proxy,
+        id: `proxy_${crypto.randomBytes(6).toString('hex')}`
+    }));
+    const proxies = [...config.proxies, ...additions];
+    const next = { ...config, proxies };
+    return saveProxyConfig(next);
+};
+
 const updateProxy = (id, entry) => {
     if (!id) return null;
     const normalized = normalizeProxy(entry);
@@ -243,6 +257,7 @@ module.exports = {
     getProxySelection,
     listProxies,
     addProxy,
+    addProxies,
     updateProxy,
     deleteProxy,
     setDefaultProxy,
