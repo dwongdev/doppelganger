@@ -106,6 +106,7 @@ async function handleScrape(req, res) {
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
                 '--disable-blink-features=AutomationControlled',
                 '--hide-scrollbars',
                 '--mute-audio'
@@ -136,7 +137,7 @@ async function handleScrape(req, res) {
             timezoneId: 'America/New_York',
             colorScheme: 'dark',
             permissions: ['geolocation'],
-            recordVideo: { dir: recordingsDir }
+            recordVideo: { dir: recordingsDir, size: viewport }
         };
 
         if (fs.existsSync(STORAGE_STATE_FILE)) {
