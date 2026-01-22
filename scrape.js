@@ -464,7 +464,16 @@ async function handleScrape(req, res) {
                 if (videoPath && fs.existsSync(videoPath)) {
                     const recordingName = `${captureRunId}_scrape_${Date.now()}.webm`;
                     const recordingPath = path.join(capturesDir, recordingName);
-                    fs.renameSync(videoPath, recordingPath);
+                    try {
+                        fs.renameSync(videoPath, recordingPath);
+                    } catch (err) {
+                        if (err && err.code === 'EXDEV') {
+                            fs.copyFileSync(videoPath, recordingPath);
+                            fs.unlinkSync(videoPath);
+                        } else {
+                            throw err;
+                        }
+                    }
                 }
             } catch (e) {
                 console.error('Recording save failed:', e.message);
