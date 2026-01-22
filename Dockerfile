@@ -17,16 +17,20 @@ FROM mcr.microsoft.com/playwright:v1.57.0-jammy AS runtime
 
 WORKDIR /app
 
-# Install VNC + noVNC tooling for containerized headful viewer
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        novnc \
-        websockify \
-        x11vnc \
-        xvfb \
-        curl \
-        ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+# Install VNC + noVNC tooling for containerized headful viewer (optional for CI)
+ARG INSTALL_VNC=1
+ENV DEBIAN_FRONTEND=noninteractive
+RUN if [ "$INSTALL_VNC" = "1" ]; then \
+        apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update \
+        && apt-get install -y --no-install-recommends \
+            novnc \
+            websockify \
+            x11vnc \
+            xvfb \
+            curl \
+            ca-certificates \
+        && rm -rf /var/lib/apt/lists/*; \
+    fi
 
 # Install production deps only
 COPY package*.json ./
@@ -35,8 +39,7 @@ ENV DOPPELGANGER_SKIP_PLAYWRIGHT_INSTALL=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 RUN npm ci --omit=dev
 
-# Ensure Playwright browsers + OS deps are available
-RUN npx playwright install --with-deps chromium chrome firefox
+# Playwright base image already includes browsers and OS deps.
 
 # Copy server and built assets
 COPY --from=build /app/dist /app/dist
