@@ -2,6 +2,7 @@ node_modules/
 dist/
 data/
 public/screenshots/
+public/captures/
 storage_state.json
 proxies.json
 .env
@@ -9,3 +10,5 @@ npm-debug.log
 .vscode/
 .DS_Store
 n8n-nodes-doppelganger/
+.npmignore
+src/components/settings/ThemePanel.tsx
