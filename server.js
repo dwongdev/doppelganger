@@ -321,7 +321,8 @@ const requireIpAllowlist = (req, res, next) => {
 const { handleScrape } = require('./scrape');
 const { handleAgent, setProgressReporter, setStopChecker } = require('./agent');
 const { handleHeadful, stopHeadful } = require('./headful');
-const { listProxies, addProxy, addProxies, updateProxy, deleteProxy, setDefaultProxy, setIncludeDefaultInRotation } = require('./proxy-rotation');
+const { listProxies, addProxy, addProxies, updateProxy, deleteProxy, setDefaultProxy, setIncludeDefaultInRotation, setRotationMode } = require('./proxy-rotation');
+const { getUserAgentConfig, setUserAgentSelection } = require('./user-agent-settings');
 
 setProgressReporter(sendExecutionUpdate);
 setStopChecker((runId) => {
@@ -483,6 +484,26 @@ app.post('/api/settings/api-key', requireAuthForSettings, (req, res) => {
     }
 });
 
+app.get('/api/settings/user-agent', requireAuthForSettings, (_req, res) => {
+    try {
+        res.json(getUserAgentConfig());
+    } catch (e) {
+        console.error('[USER_AGENT] Load failed:', e);
+        res.status(500).json({ error: 'USER_AGENT_LOAD_FAILED' });
+    }
+});
+
+app.post('/api/settings/user-agent', requireAuthForSettings, (req, res) => {
+    try {
+        const selection = req.body && typeof req.body.selection === 'string' ? req.body.selection : null;
+        setUserAgentSelection(selection);
+        res.json(getUserAgentConfig());
+    } catch (e) {
+        console.error('[USER_AGENT] Save failed:', e);
+        res.status(500).json({ error: 'USER_AGENT_SAVE_FAILED' });
+    }
+});
+
 // --- PROXY SETTINGS ---
 app.get('/api/settings/proxies', requireAuthForSettings, (_req, res) => {
     try {
@@ -566,9 +587,13 @@ app.post('/api/settings/proxies/default', requireAuthForSettings, (req, res) => 
 });
 
 app.post('/api/settings/proxies/rotation', requireAuthForSettings, (req, res) => {
-    const enabled = !!(req.body && req.body.includeDefaultInRotation);
+    const body = req.body || {};
+    const hasIncludeDefault = Object.prototype.hasOwnProperty.call(body, 'includeDefaultInRotation');
+    const includeDefaultInRotation = !!body.includeDefaultInRotation;
+    const rotationMode = typeof body.rotationMode === 'string' ? body.rotationMode : null;
     try {
-        setIncludeDefaultInRotation(enabled);
+        if (hasIncludeDefault) setIncludeDefaultInRotation(includeDefaultInRotation);
+        if (rotationMode) setRotationMode(rotationMode);
         res.json(listProxies());
     } catch (e) {
         console.error('[PROXIES] Rotation toggle failed:', e);
@@ -578,10 +603,10 @@ app.post('/api/settings/proxies/rotation', requireAuthForSettings, (req, res) =>
 
 
 app.post('/api/clear-screenshots', requireAuth, (req, res) => {
-    const screenshotsDir = path.join(__dirname, 'public', 'screenshots');
-    if (fs.existsSync(screenshotsDir)) {
-        for (const entry of fs.readdirSync(screenshotsDir)) {
-            const entryPath = path.join(screenshotsDir, entry);
+    const capturesDir = path.join(__dirname, 'public', 'captures');
+    if (fs.existsSync(capturesDir)) {
+        for (const entry of fs.readdirSync(capturesDir)) {
+            const entryPath = path.join(capturesDir, entry);
             if (fs.statSync(entryPath).isFile()) {
                 fs.unlinkSync(entryPath);
             }
@@ -762,17 +787,41 @@ app.post('/api/tasks/:id/rollback', requireAuth, (req, res) => {
     res.json(restored);
 });
 
-app.get('/api/data/screenshots', requireAuth, (req, res) => {
-    const screenshotsDir = path.join(__dirname, 'public', 'screenshots');
-    if (!fs.existsSync(screenshotsDir)) return res.json({ screenshots: [] });
-    const entries = fs.readdirSync(screenshotsDir)
-        .filter(name => name.toLowerCase().endsWith('.png'))
+app.get('/api/data/captures', requireAuth, (_req, res) => {
+    const capturesDir = path.join(__dirname, 'public', 'captures');
+    if (!fs.existsSync(capturesDir)) return res.json({ captures: [] });
+    const runId = String(_req.query?.runId || '').trim();
+    const entries = fs.readdirSync(capturesDir)
+        .filter(name => /\.(png|jpg|jpeg|webm)$/i.test(name))
+        .filter((name) => !runId || name.includes(runId))
         .map((name) => {
-            const fullPath = path.join(screenshotsDir, name);
+            const fullPath = path.join(capturesDir, name);
+            const stat = fs.statSync(fullPath);
+            const lower = name.toLowerCase();
+            const type = lower.endsWith('.webm') ? 'recording' : 'screenshot';
+            return {
+                name,
+                url: `/captures/${name}`,
+                size: stat.size,
+                modified: stat.mtimeMs,
+                type
+            };
+        })
+        .sort((a, b) => b.modified - a.modified);
+    res.json({ captures: entries });
+});
+
+app.get('/api/data/screenshots', requireAuth, (_req, res) => {
+    const capturesDir = path.join(__dirname, 'public', 'captures');
+    if (!fs.existsSync(capturesDir)) return res.json({ screenshots: [] });
+    const entries = fs.readdirSync(capturesDir)
+        .filter(name => /\.(png|jpg|jpeg)$/i.test(name))
+        .map((name) => {
+            const fullPath = path.join(capturesDir, name);
             const stat = fs.statSync(fullPath);
             return {
                 name,
-                url: `/screenshots/${name}`,
+                url: `/captures/${name}`,
                 size: stat.size,
                 modified: stat.mtimeMs
             };
@@ -781,12 +830,12 @@ app.get('/api/data/screenshots', requireAuth, (req, res) => {
     res.json({ screenshots: entries });
 });
 
-app.delete('/api/data/screenshots/:name', requireAuth, (req, res) => {
+app.delete('/api/data/captures/:name', requireAuth, (req, res) => {
     const name = req.params.name;
     if (name.includes('..') || name.includes('/') || name.includes('\\')) {
         return res.status(400).json({ error: 'INVALID_NAME' });
     }
-    const targetPath = path.join(__dirname, 'public', 'screenshots', name);
+    const targetPath = path.join(__dirname, 'public', 'captures', name);
     if (fs.existsSync(targetPath)) {
         fs.unlinkSync(targetPath);
     }
@@ -987,10 +1036,10 @@ app.post('/headful', requireAuth, (req, res) => {
 });
 app.post('/headful/stop', requireAuth, stopHeadful);
 
-// Ensure public/screenshots directory exists
-const screenshotsDir = path.join(__dirname, 'public', 'screenshots');
-if (!fs.existsSync(screenshotsDir)) {
-    fs.mkdirSync(screenshotsDir, { recursive: true });
+// Ensure public/captures directory exists
+const capturesDir = path.join(__dirname, 'public', 'captures');
+if (!fs.existsSync(capturesDir)) {
+    fs.mkdirSync(capturesDir, { recursive: true });
 }
 
 const novncDirCandidates = [
@@ -1011,7 +1060,8 @@ if (novncDir) {
     app.use('/novnc', express.static(novncDir));
 }
 
-app.use('/screenshots', express.static(screenshotsDir));
+app.use('/captures', express.static(capturesDir));
+app.use('/screenshots', express.static(capturesDir));
 app.use(express.static(DIST_DIR));
 
 app.get('/api/headful/status', (req, res) => {

@@ -13,6 +13,7 @@ interface ProxiesPanelProps {
     proxies: ProxyEntry[];
     defaultProxyId: string | null;
     includeDefaultInRotation: boolean;
+    rotationMode: 'round-robin' | 'random';
     loading: boolean;
     onRefresh: () => void;
     onAdd: (entry: { server: string; username?: string; password?: string; label?: string }) => void;
@@ -21,12 +22,14 @@ interface ProxiesPanelProps {
     onDelete: (id: string) => void;
     onSetDefault: (id: string | null) => void;
     onToggleIncludeDefault: (enabled: boolean) => void;
+    onRotationModeChange: (mode: 'round-robin' | 'random') => void;
 }
 
 const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
     proxies,
     defaultProxyId,
     includeDefaultInRotation,
+    rotationMode,
     loading,
     onRefresh,
     onAdd,
@@ -34,7 +37,8 @@ const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
     onUpdate,
     onDelete,
     onSetDefault,
-    onToggleIncludeDefault
+    onToggleIncludeDefault,
+    onRotationModeChange
 }) => {
     const [server, setServer] = useState('');
     const [username, setUsername] = useState('');
@@ -219,6 +223,17 @@ const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
             {importError && (
                 <div className="text-[9px] text-red-400 uppercase tracking-widest">{importError}</div>
             )}
+            <label className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all group">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-white">Rotation mode</span>
+                <select
+                    value={rotationMode}
+                    onChange={(e) => onRotationModeChange(e.target.value === 'random' ? 'random' : 'round-robin')}
+                    className="bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white uppercase tracking-widest"
+                >
+                    <option value="round-robin">Round robin</option>
+                    <option value="random">Random</option>
+                </select>
+            </label>
             <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all cursor-pointer group">
                 <input
                     type="checkbox"

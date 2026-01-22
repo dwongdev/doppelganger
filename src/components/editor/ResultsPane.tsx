@@ -9,6 +9,7 @@ interface ResultsPaneProps {
     pinnedResults?: Results | null;
     isExecuting: boolean;
     isHeadful?: boolean;
+    runId?: string | null;
     onConfirm: (request: ConfirmRequest) => Promise<boolean>;
     onNotify: (message: string, tone?: 'success' | 'error') => void;
     onPin?: (results: Results) => void;
@@ -251,11 +252,14 @@ const downloadText = (filename: string, content: string, mime: string) => {
     URL.revokeObjectURL(url);
 };
 
-const ResultsPane: React.FC<ResultsPaneProps> = ({ results, pinnedResults, isExecuting, isHeadful, onConfirm, onNotify, onPin, onUnpin, fullWidth }) => {
+const ResultsPane: React.FC<ResultsPaneProps> = ({ results, pinnedResults, isExecuting, isHeadful, runId, onConfirm, onNotify, onPin, onUnpin, fullWidth }) => {
     const [copied, setCopied] = useState<string | null>(null);
     const [dataView, setDataView] = useState<'raw' | 'table'>('raw');
     const [resultView, setResultView] = useState<'latest' | 'pinned'>(() => (pinnedResults && !results ? 'pinned' : 'latest'));
     const [headfulViewer, setHeadfulViewer] = useState<'checking' | 'native' | 'novnc'>('checking');
+    const [capturesOpen, setCapturesOpen] = useState(false);
+    const [capturesLoading, setCapturesLoading] = useState(false);
+    const [captures, setCaptures] = useState<{ name: string; url: string; size: number; modified: number; type: 'screenshot' | 'recording' }[]>([]);
     const headfulFrameRef = useRef<HTMLDivElement | null>(null);
     const activeResults = resultView === 'pinned' && pinnedResults ? pinnedResults : results;
     const tableData = getTableData(activeResults?.data);
@@ -272,6 +276,20 @@ const ResultsPane: React.FC<ResultsPaneProps> = ({ results, pinnedResults, isExe
             return <Check className="w-3 h-3 text-blue-400" />;
         }
         return value ?? '';
+    };
+
+    const loadCaptures = async () => {
+        setCapturesLoading(true);
+        try {
+            const query = runId ? `?runId=${encodeURIComponent(runId)}` : '';
+            const res = await fetch(`/api/data/captures${query}`);
+            const data = res.ok ? await res.json() : { captures: [] };
+            setCaptures(Array.isArray(data.captures) ? data.captures : []);
+        } catch {
+            setCaptures([]);
+        } finally {
+            setCapturesLoading(false);
+        }
     };
 
     useEffect(() => {
@@ -448,7 +466,19 @@ const ResultsPane: React.FC<ResultsPaneProps> = ({ results, pinnedResults, isExe
                 <div className="glass-card rounded-[32px] overflow-hidden flex flex-col min-h-[400px]">
                     <div className="p-6 border-b border-white/5 flex items-center justify-between text-[8px] font-bold text-gray-500 uppercase tracking-widest">
                         <span>Screenshot</span>
-                        <span className="text-white/20">{activeResults?.timestamp || '--:--:--'}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-white/20">{activeResults?.timestamp || '--:--:--'}</span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setCapturesOpen(true);
+                                    loadCaptures();
+                                }}
+                                className="px-3 py-2 rounded-xl border border-white/10 text-[8px] font-bold uppercase tracking-widest text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                            >
+                                View All Captures
+                            </button>
+                        </div>
                     </div>
                     <div className="relative bg-black flex-1 flex items-center justify-center overflow-hidden">
                         {screenshotSrc ? (
@@ -473,6 +503,64 @@ const ResultsPane: React.FC<ResultsPaneProps> = ({ results, pinnedResults, isExe
                     </div>
                 </div>
             </div>
+
+            {capturesOpen && (
+                <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-6">
+                    <div className="glass-card rounded-[32px] w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+                        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                            <div>
+                                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Captures</div>
+                                <div className="text-sm font-bold text-white">Recordings and Screenshots</div>
+                            </div>
+                            <button
+                                onClick={() => setCapturesOpen(false)}
+                                className="px-3 py-2 border text-[9px] font-bold rounded-xl uppercase transition-all bg-white/5 border-white/10 text-white hover:bg-white/10"
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
+                            {capturesLoading && (
+                                <div className="text-[9px] text-gray-500 uppercase tracking-widest">Loading captures...</div>
+                            )}
+                            {!capturesLoading && captures.length === 0 && (
+                                <div className="text-[9px] text-gray-600 uppercase tracking-widest">No captures found.</div>
+                            )}
+                            {!capturesLoading && captures.length > 0 && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {captures.map((capture) => (
+                                        <div key={capture.name} className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
+                                            <div className="p-3 border-b border-white/10 flex items-center justify-between">
+                                                <div className="text-[9px] font-bold text-white uppercase tracking-widest">
+                                                    {capture.type === 'recording' ? 'Recording' : 'Screenshot'}
+                                                </div>
+                                                <a
+                                                    href={capture.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-[9px] font-bold uppercase tracking-widest text-blue-300 hover:text-blue-200"
+                                                >
+                                                    Open
+                                                </a>
+                                            </div>
+                                            <div className="bg-black">
+                                                {capture.type === 'recording' ? (
+                                                    <video src={capture.url} controls className="w-full h-64 object-contain bg-black" />
+                                                ) : (
+                                                    <img src={capture.url} className="w-full h-64 object-contain bg-black" />
+                                                )}
+                                            </div>
+                                            <div className="p-3 text-[9px] text-gray-500 uppercase tracking-widest">
+                                                {capture.name}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="glass-card rounded-[32px] p-8 flex flex-col relative">
                 <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">

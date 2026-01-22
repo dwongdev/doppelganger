@@ -19,7 +19,7 @@ const StoragePanel: React.FC<StoragePanelProps> = ({ onClearStorage }) => {
                     onClick={() => onClearStorage('screenshots')}
                     className="flex-1 px-6 py-4 bg-red-500/5 border border-red-500/10 text-red-400 rounded-2xl text-[9px] font-bold uppercase tracking-widest hover:bg-red-500/10 transition-all"
                 >
-                    Clear Screenshots
+                    Clear Captures
                 </button>
                 <button
                     onClick={() => onClearStorage('cookies')}

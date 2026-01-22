@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { ConfirmRequest } from '../types';
 import ApiKeyPanel from './settings/ApiKeyPanel';
 import StoragePanel from './settings/StoragePanel';
-import ScreenshotsPanel from './settings/ScreenshotsPanel';
+import CapturesPanel from './settings/CapturesPanel';
 import CookiesPanel from './settings/CookiesPanel';
 import SettingsHeader from './settings/SettingsHeader';
 import LayoutPanel from './settings/LayoutPanel';
 import ProxiesPanel from './settings/ProxiesPanel';
+import UserAgentPanel from './settings/UserAgentPanel';
 
 interface SettingsScreenProps {
     onClearStorage: (type: 'screenshots' | 'cookies') => void;
@@ -20,7 +21,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
     onNotify
 }) => {
     const [tab, setTab] = useState<'system' | 'data' | 'proxies'>('system');
-    const [screenshots, setScreenshots] = useState<{ name: string; url: string; size: number; modified: number }[]>([]);
+    const [captures, setCaptures] = useState<{ name: string; url: string; size: number; modified: number; type: 'screenshot' | 'recording' }[]>([]);
     const [cookies, setCookies] = useState<{ name: string; value: string; domain?: string; path?: string; expires?: number }[]>([]);
     const [cookieOrigins, setCookieOrigins] = useState<any[]>([]);
     const [dataLoading, setDataLoading] = useState(false);
@@ -31,7 +32,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
     const [proxies, setProxies] = useState<{ id: string; server: string; username?: string; password?: string; label?: string }[]>([]);
     const [defaultProxyId, setDefaultProxyId] = useState<string | null>(null);
     const [includeDefaultInRotation, setIncludeDefaultInRotation] = useState(false);
+    const [rotationMode, setRotationMode] = useState<'round-robin' | 'random'>('round-robin');
     const [proxiesLoading, setProxiesLoading] = useState(false);
+    const [userAgentSelection, setUserAgentSelection] = useState('system');
+    const [userAgentOptions, setUserAgentOptions] = useState<string[]>([]);
+    const [userAgentLoading, setUserAgentLoading] = useState(false);
 
     const layoutStorageKey = 'doppelganger.layout.leftWidthPct';
 
@@ -50,17 +55,17 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
     const loadData = async () => {
         setDataLoading(true);
         try {
-            const [shotsRes, cookiesRes] = await Promise.all([
-                fetch('/api/data/screenshots'),
+            const [capturesRes, cookiesRes] = await Promise.all([
+                fetch('/api/data/captures'),
                 fetch('/api/data/cookies')
             ]);
-            const shotsData = shotsRes.ok ? await shotsRes.json() : { screenshots: [] };
+            const capturesData = capturesRes.ok ? await capturesRes.json() : { captures: [] };
             const cookiesData = cookiesRes.ok ? await cookiesRes.json() : { cookies: [], origins: [] };
-            setScreenshots(Array.isArray(shotsData.screenshots) ? shotsData.screenshots : []);
+            setCaptures(Array.isArray(capturesData.captures) ? capturesData.captures : []);
             setCookies(Array.isArray(cookiesData.cookies) ? cookiesData.cookies : []);
             setCookieOrigins(Array.isArray(cookiesData.origins) ? cookiesData.origins : []);
         } catch {
-            setScreenshots([]);
+            setCaptures([]);
             setCookies([]);
             setCookieOrigins([]);
         } finally {
@@ -68,12 +73,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
         }
     };
 
-    const deleteScreenshot = async (name: string) => {
-        const confirmed = await onConfirm(`Delete screenshot ${name}?`);
+    const deleteCapture = async (name: string) => {
+        const confirmed = await onConfirm(`Delete capture ${name}?`);
         if (!confirmed) return;
-        const res = await fetch(`/api/data/screenshots/${encodeURIComponent(name)}`, { method: 'DELETE' });
+        const res = await fetch(`/api/data/captures/${encodeURIComponent(name)}`, { method: 'DELETE' });
         if (res.ok) {
-            onNotify('Screenshot deleted.', 'success');
+            onNotify('Capture deleted.', 'success');
             loadData();
         } else {
             onNotify('Delete failed.', 'error');
@@ -126,16 +131,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 }
                 setProxies([]);
                 setDefaultProxyId(null);
+                setRotationMode('round-robin');
                 return;
             }
             const data = await res.json();
             setProxies(Array.isArray(data.proxies) ? data.proxies : []);
             setDefaultProxyId(data.defaultProxyId || null);
             setIncludeDefaultInRotation(!!data.includeDefaultInRotation);
+            setRotationMode(data.rotationMode === 'random' ? 'random' : 'round-robin');
         } catch {
             setProxies([]);
             setDefaultProxyId(null);
             setIncludeDefaultInRotation(false);
+            setRotationMode('round-robin');
         } finally {
             setProxiesLoading(false);
         }
@@ -165,11 +173,59 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
             setProxies(Array.isArray(data.proxies) ? data.proxies : []);
             setDefaultProxyId(data.defaultProxyId || null);
             setIncludeDefaultInRotation(!!data.includeDefaultInRotation);
+            setRotationMode(data.rotationMode === 'random' ? 'random' : 'round-robin');
             onNotify('Proxy added.', 'success');
         } catch {
             onNotify('Failed to add proxy.', 'error');
         } finally {
             setProxiesLoading(false);
+        }
+    };
+
+    const loadUserAgent = async () => {
+        setUserAgentLoading(true);
+        try {
+            const res = await fetch('/api/settings/user-agent', { credentials: 'include' });
+            if (!res.ok) {
+                if (res.status === 401) {
+                    onNotify('Session expired. Please log in again.', 'error');
+                }
+                setUserAgentSelection('system');
+                setUserAgentOptions([]);
+                return;
+            }
+            const data = await res.json();
+            setUserAgentSelection(data.selection === 'system' ? 'system' : String(data.selection || 'system'));
+            setUserAgentOptions(Array.isArray(data.userAgents) ? data.userAgents : []);
+        } catch {
+            setUserAgentSelection('system');
+            setUserAgentOptions([]);
+        } finally {
+            setUserAgentLoading(false);
+        }
+    };
+
+    const saveUserAgent = async (selection: string) => {
+        setUserAgentLoading(true);
+        try {
+            const res = await fetch('/api/settings/user-agent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ selection })
+            });
+            if (!res.ok) {
+                onNotify('Failed to update user agent.', 'error');
+                return;
+            }
+            const data = await res.json();
+            setUserAgentSelection(data.selection === 'system' ? 'system' : String(data.selection || 'system'));
+            setUserAgentOptions(Array.isArray(data.userAgents) ? data.userAgents : []);
+            onNotify('User agent updated.', 'success');
+        } catch {
+            onNotify('Failed to update user agent.', 'error');
+        } finally {
+            setUserAgentLoading(false);
         }
     };
 
@@ -201,6 +257,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
             setProxies(Array.isArray(data.proxies) ? data.proxies : []);
             setDefaultProxyId(data.defaultProxyId || null);
             setIncludeDefaultInRotation(!!data.includeDefaultInRotation);
+            setRotationMode(data.rotationMode === 'random' ? 'random' : 'round-robin');
             onNotify('Proxies imported.', 'success');
         } catch {
             onNotify('Failed to import proxies.', 'error');
@@ -233,6 +290,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
             setProxies(Array.isArray(data.proxies) ? data.proxies : []);
             setDefaultProxyId(data.defaultProxyId || null);
             setIncludeDefaultInRotation(!!data.includeDefaultInRotation);
+            setRotationMode(data.rotationMode === 'random' ? 'random' : 'round-robin');
             onNotify('Proxy updated.', 'success');
         } catch {
             onNotify('Failed to update proxy.', 'error');
@@ -259,6 +317,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
             setProxies(Array.isArray(data.proxies) ? data.proxies : []);
             setDefaultProxyId(data.defaultProxyId || null);
             setIncludeDefaultInRotation(!!data.includeDefaultInRotation);
+            setRotationMode(data.rotationMode === 'random' ? 'random' : 'round-robin');
             onNotify('Proxy deleted.', 'success');
         } catch {
             onNotify('Delete failed.', 'error');
@@ -285,6 +344,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
             setProxies(Array.isArray(data.proxies) ? data.proxies : []);
             setDefaultProxyId(data.defaultProxyId || null);
             setIncludeDefaultInRotation(!!data.includeDefaultInRotation);
+            setRotationMode(data.rotationMode === 'random' ? 'random' : 'round-robin');
             onNotify('Default proxy updated.', 'success');
         } catch {
             onNotify('Failed to set default.', 'error');
@@ -310,9 +370,36 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
             setProxies(Array.isArray(data.proxies) ? data.proxies : []);
             setDefaultProxyId(data.defaultProxyId || null);
             setIncludeDefaultInRotation(!!data.includeDefaultInRotation);
+            setRotationMode(data.rotationMode === 'random' ? 'random' : 'round-robin');
             onNotify('Rotation setting updated.', 'success');
         } catch {
             onNotify('Failed to update rotation setting.', 'error');
+        } finally {
+            setProxiesLoading(false);
+        }
+    };
+
+    const updateRotationMode = async (mode: 'round-robin' | 'random') => {
+        setProxiesLoading(true);
+        try {
+            const res = await fetch('/api/settings/proxies/rotation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ rotationMode: mode })
+            });
+            if (!res.ok) {
+                onNotify('Failed to update rotation mode.', 'error');
+                return;
+            }
+            const data = await res.json();
+            setProxies(Array.isArray(data.proxies) ? data.proxies : []);
+            setDefaultProxyId(data.defaultProxyId || null);
+            setIncludeDefaultInRotation(!!data.includeDefaultInRotation);
+            setRotationMode(data.rotationMode === 'random' ? 'random' : 'round-robin');
+            onNotify('Rotation mode updated.', 'success');
+        } catch {
+            onNotify('Failed to update rotation mode.', 'error');
         } finally {
             setProxiesLoading(false);
         }
@@ -375,7 +462,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
     useEffect(() => {
         if (tab === 'data') loadData();
-        if (tab === 'system') loadApiKey();
+        if (tab === 'system') {
+            loadApiKey();
+            loadUserAgent();
+        }
         if (tab === 'proxies') loadProxies();
     }, [tab]);
 
@@ -401,6 +491,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                             onRegenerate={regenerateApiKey}
                             onCopy={copyApiKey}
                         />
+                        <UserAgentPanel
+                            selection={userAgentSelection}
+                            options={userAgentOptions}
+                            loading={userAgentLoading}
+                            onChange={saveUserAgent}
+                        />
                         <LayoutPanel
                             splitPercent={layoutSplitPercent}
                             onChange={setLayoutSplitPercent}
@@ -412,11 +508,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
                 {tab === 'data' && (
                     <>
-                        <ScreenshotsPanel
-                            screenshots={screenshots}
+                        <CapturesPanel
+                            captures={captures}
                             loading={dataLoading}
                             onRefresh={loadData}
-                            onDelete={deleteScreenshot}
+                            onDelete={deleteCapture}
                         />
 
                         <CookiesPanel
@@ -434,6 +530,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                         proxies={proxies}
                         defaultProxyId={defaultProxyId}
                         includeDefaultInRotation={includeDefaultInRotation}
+                        rotationMode={rotationMode}
                         loading={proxiesLoading}
                         onRefresh={loadProxies}
                         onAdd={addProxy}
@@ -442,6 +539,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                         onDelete={deleteProxy}
                         onSetDefault={setDefaultProxy}
                         onToggleIncludeDefault={toggleIncludeDefaultInRotation}
+                        onRotationModeChange={updateRotationMode}
                     />
                 )}
             </div>

@@ -8,10 +8,12 @@ const PROXY_FILES = [
     path.join(__dirname, 'proxies.json')
 ];
 
+const ROTATION_MODES = new Set(['round-robin', 'random']);
+
 let cached = {
     file: null,
     mtimeMs: 0,
-    config: { proxies: [], defaultProxyId: null, includeDefaultInRotation: false }
+    config: { proxies: [], defaultProxyId: null, includeDefaultInRotation: false, rotationMode: 'round-robin' }
 };
 let rotationIndex = 0;
 
@@ -71,19 +73,25 @@ const normalizeProxy = (entry) => {
     return null;
 };
 
+const normalizeRotationMode = (mode) => {
+    if (ROTATION_MODES.has(mode)) return mode;
+    return 'round-robin';
+};
+
 const loadProxyFile = (filePath) => {
     try {
         const raw = fs.readFileSync(filePath, 'utf8');
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-            return { proxies: parsed, defaultProxyId: null, includeDefaultInRotation: false };
+            return { proxies: parsed, defaultProxyId: null, includeDefaultInRotation: false, rotationMode: 'round-robin' };
         }
         const proxies = Array.isArray(parsed.proxies) ? parsed.proxies : [];
         const defaultProxyId = parsed.defaultProxyId || null;
         const includeDefaultInRotation = !!parsed.includeDefaultInRotation;
-        return { proxies, defaultProxyId, includeDefaultInRotation };
+        const rotationMode = normalizeRotationMode(parsed.rotationMode);
+        return { proxies, defaultProxyId, includeDefaultInRotation, rotationMode };
     } catch {
-        return { proxies: [], defaultProxyId: null, includeDefaultInRotation: false };
+        return { proxies: [], defaultProxyId: null, includeDefaultInRotation: false, rotationMode: 'round-robin' };
     }
 };
 
@@ -97,7 +105,7 @@ const loadProxyConfig = () => {
     });
 
     if (!filePath) {
-        cached = { file: null, mtimeMs: 0, config: { proxies: [], defaultProxyId: null, includeDefaultInRotation: false } };
+        cached = { file: null, mtimeMs: 0, config: { proxies: [], defaultProxyId: null, includeDefaultInRotation: false, rotationMode: 'round-robin' } };
         return cached.config;
     }
 
@@ -115,12 +123,13 @@ const loadProxyConfig = () => {
         const config = {
             proxies,
             defaultProxyId,
-            includeDefaultInRotation: !!rawConfig.includeDefaultInRotation
+            includeDefaultInRotation: !!rawConfig.includeDefaultInRotation,
+            rotationMode: normalizeRotationMode(rawConfig.rotationMode)
         };
         cached = { file: filePath, mtimeMs, config };
         return config;
     } catch {
-        cached = { file: filePath, mtimeMs: 0, config: { proxies: [], defaultProxyId: null, includeDefaultInRotation: false } };
+        cached = { file: filePath, mtimeMs: 0, config: { proxies: [], defaultProxyId: null, includeDefaultInRotation: false, rotationMode: 'round-robin' } };
         return cached.config;
     }
 };
@@ -130,7 +139,8 @@ const saveProxyConfig = (config) => {
     const payload = {
         defaultProxyId: config.defaultProxyId || null,
         proxies: Array.isArray(config.proxies) ? config.proxies : [],
-        includeDefaultInRotation: !!config.includeDefaultInRotation
+        includeDefaultInRotation: !!config.includeDefaultInRotation,
+        rotationMode: normalizeRotationMode(config.rotationMode)
     };
     fs.writeFileSync(target, JSON.stringify(payload, null, 2));
     try {
@@ -152,7 +162,8 @@ const listProxies = () => {
     return {
         proxies: [hostEntry, ...(config.proxies || [])],
         defaultProxyId: config.defaultProxyId || 'host',
-        includeDefaultInRotation: !!config.includeDefaultInRotation
+        includeDefaultInRotation: !!config.includeDefaultInRotation,
+        rotationMode: normalizeRotationMode(config.rotationMode)
     };
 };
 
@@ -218,7 +229,7 @@ const deleteProxy = (id) => {
     const config = loadProxyConfig();
     const proxies = config.proxies.filter((proxy) => proxy.id !== id);
     const defaultProxyId = config.defaultProxyId === id ? null : config.defaultProxyId;
-    return saveProxyConfig({ proxies, defaultProxyId });
+    return saveProxyConfig({ ...config, proxies, defaultProxyId });
 };
 
 const setDefaultProxy = (id) => {
@@ -235,8 +246,17 @@ const setIncludeDefaultInRotation = (enabled) => {
     return saveProxyConfig({ ...config, includeDefaultInRotation: !!enabled });
 };
 
-const getNextProxy = (proxies) => {
+const setRotationMode = (mode) => {
+    const config = loadProxyConfig();
+    return saveProxyConfig({ ...config, rotationMode: normalizeRotationMode(mode) });
+};
+
+const getNextProxy = (proxies, mode) => {
     if (!proxies.length) return null;
+    if (mode === 'random') {
+        const index = Math.floor(Math.random() * proxies.length);
+        return proxies[index];
+    }
     const selected = proxies[rotationIndex % proxies.length];
     rotationIndex += 1;
     return selected;
@@ -252,6 +272,7 @@ const getProxySelection = (rotateProxies) => {
         : null;
     const defaultIsHost = !config.defaultProxyId;
     const includeDefaultInRotation = !!config.includeDefaultInRotation;
+    const rotationMode = normalizeRotationMode(config.rotationMode);
 
     if (rotateProxies) {
         let rotationPool = pool;
@@ -263,7 +284,7 @@ const getProxySelection = (rotateProxies) => {
             }
         }
         if (rotationPool.length > 0) {
-            const picked = getNextProxy(rotationPool);
+            const picked = getNextProxy(rotationPool, rotationMode);
             return { proxy: picked && picked.id !== 'host' ? picked : null, mode: 'rotate' };
         }
         if (defaultProxy) return { proxy: defaultProxy, mode: 'default' };
@@ -282,5 +303,6 @@ module.exports = {
     updateProxy,
     deleteProxy,
     setDefaultProxy,
-    setIncludeDefaultInRotation
+    setIncludeDefaultInRotation,
+    setRotationMode
 };

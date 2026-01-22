@@ -3,6 +3,7 @@ const { JSDOM } = require('jsdom');
 const fs = require('fs');
 const path = require('path');
 const { getProxySelection } = require('./proxy-rotation');
+const { selectUserAgent } = require('./user-agent-settings');
 
 const STORAGE_STATE_PATH = path.join(__dirname, 'storage_state.json');
 const STORAGE_STATE_FILE = (() => {
@@ -16,12 +17,6 @@ const STORAGE_STATE_FILE = (() => {
     } catch {}
     return STORAGE_STATE_PATH;
 })();
-
-const userAgents = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
-];
 
 const API_KEY_FILE = path.join(__dirname, 'data', 'api_key.json');
 
@@ -170,6 +165,7 @@ async function handleAgent(req, res) {
     const data = (req.method === 'POST') ? req.body : req.query;
     let { url, actions, wait: globalWait, rotateUserAgents, rotateProxies, humanTyping, stealth = {} } = data;
     const runId = data.runId ? String(data.runId) : null;
+    const captureRunId = runId || `run_${Date.now()}_unknown`;
     const includeShadowDomRaw = data.includeShadowDom ?? req.query.includeShadowDom;
     const includeShadowDom = includeShadowDomRaw === undefined
         ? true
@@ -230,6 +226,16 @@ async function handleAgent(req, res) {
     const resolveMaybe = (value) => {
         if (typeof value !== 'string') return value;
         return resolveTemplate(value);
+    };
+
+    const parseCoords = (input) => {
+        if (!input || typeof input !== 'string') return null;
+        const match = input.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+        if (!match) return null;
+        const x = Number(match[1]);
+        const y = Number(match[2]);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+        return { x, y };
     };
 
     const parseValue = (value) => {
@@ -391,12 +397,11 @@ async function handleAgent(req, res) {
         return { startToEnd, startToElse, elseToEnd, endToStart };
     };
 
-    // Pick a random UA if rotation is enabled, otherwise use the first one
-    const selectedUA = rotateUserAgents
-        ? userAgents[Math.floor(Math.random() * userAgents.length)]
-        : userAgents[0];
+    const selectedUA = selectUserAgent(rotateUserAgents);
 
     let browser;
+    let context;
+    let page;
     try {
         const launchOptions = {
             headless: true,
@@ -417,24 +422,96 @@ async function handleAgent(req, res) {
         console.log(`[PROXY] Mode: ${selection.mode}; Target: ${selection.proxy ? selection.proxy.server : 'host_ip'}`);
         browser = await chromium.launch(launchOptions);
 
+        const recordingsDir = path.join(__dirname, 'data', 'recordings');
+        if (!fs.existsSync(recordingsDir)) {
+            fs.mkdirSync(recordingsDir, { recursive: true });
+        }
+
+        const rotateViewport = String(data.rotateViewport).toLowerCase() === 'true' || data.rotateViewport === true;
+        const viewport = rotateViewport
+            ? { width: 1280 + Math.floor(Math.random() * 640), height: 720 + Math.floor(Math.random() * 360) }
+            : { width: 1366, height: 768 };
+
         const contextOptions = {
             userAgent: selectedUA,
-            viewport: { width: 1280 + Math.floor(Math.random() * 640), height: 720 + Math.floor(Math.random() * 360) },
+            viewport,
             deviceScaleFactor: 1,
             locale: 'en-US',
             timezoneId: 'America/New_York',
             colorScheme: 'dark',
-            permissions: ['geolocation']
+            permissions: ['geolocation'],
+            recordVideo: { dir: recordingsDir }
         };
 
         if (fs.existsSync(STORAGE_STATE_FILE)) {
             contextOptions.storageState = STORAGE_STATE_FILE;
         }
 
-        const context = await browser.newContext(contextOptions);
+        context = await browser.newContext(contextOptions);
 
         await context.addInitScript(() => {
             Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        });
+        await context.addInitScript(() => {
+            const cursorId = 'dg-cursor-overlay';
+            const dotId = 'dg-click-dot';
+            if (document.getElementById(cursorId)) return;
+            const cursor = document.createElement('div');
+            cursor.id = cursorId;
+            cursor.style.cssText = [
+                'position:fixed',
+                'top:0',
+                'left:0',
+                'width:18px',
+                'height:18px',
+                'margin-left:-9px',
+                'margin-top:-9px',
+                'border:2px solid rgba(56,189,248,0.7)',
+                'background:rgba(56,189,248,0.25)',
+                'border-radius:50%',
+                'box-shadow:0 0 10px rgba(56,189,248,0.6)',
+                'pointer-events:none',
+                'z-index:2147483647',
+                'transform:translate3d(0,0,0)',
+                'transition:transform 60ms ease-out'
+            ].join(';');
+            const dot = document.createElement('div');
+            dot.id = dotId;
+            dot.style.cssText = [
+                'position:fixed',
+                'top:0',
+                'left:0',
+                'width:10px',
+                'height:10px',
+                'margin-left:-5px',
+                'margin-top:-5px',
+                'background:rgba(239,68,68,0.9)',
+                'border-radius:50%',
+                'box-shadow:0 0 12px rgba(239,68,68,0.8)',
+                'pointer-events:none',
+                'z-index:2147483647',
+                'opacity:0',
+                'transform:translate3d(0,0,0) scale(0.6)',
+                'transition:opacity 120ms ease, transform 120ms ease'
+            ].join(';');
+            document.documentElement.appendChild(cursor);
+            document.documentElement.appendChild(dot);
+            const move = (x, y) => {
+                cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+            };
+            window.addEventListener('mousemove', (e) => move(e.clientX, e.clientY), { passive: true });
+            window.addEventListener('click', (e) => {
+                dot.style.left = `${e.clientX}px`;
+                dot.style.top = `${e.clientY}px`;
+                dot.style.opacity = '1';
+                dot.style.transform = 'translate3d(0,0,0) scale(1)';
+                cursor.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) scale(0.65)`;
+                setTimeout(() => {
+                    dot.style.opacity = '0';
+                    dot.style.transform = 'translate3d(0,0,0) scale(0.6)';
+                    cursor.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) scale(1)`;
+                }, 180);
+            }, true);
         });
         if (includeShadowDom) {
             await context.addInitScript(() => {
@@ -447,7 +524,7 @@ async function handleAgent(req, res) {
             });
         }
 
-        const page = await context.newPage();
+        page = await context.newPage();
 
         if (url) {
             await page.goto(resolveTemplate(url), { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -648,63 +725,101 @@ async function handleAgent(req, res) {
             return merged;
         };
 
+        const ensureCapturesDir = () => {
+            const capturesDir = path.join(__dirname, 'public', 'captures');
+            if (!fs.existsSync(capturesDir)) {
+                fs.mkdirSync(capturesDir, { recursive: true });
+            }
+            return capturesDir;
+        };
+
+        const captureScreenshot = async (label) => {
+            const capturesDir = ensureCapturesDir();
+            const safeLabel = label ? String(label).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) : '';
+            const nameSuffix = safeLabel ? `_${safeLabel}` : '';
+            const screenshotName = `${captureRunId}_agent_${Date.now()}${nameSuffix}.png`;
+            const screenshotPath = path.join(capturesDir, screenshotName);
+            await page.screenshot({ path: screenshotPath, fullPage: false });
+            return `/captures/${screenshotName}`;
+        };
+
         const executeAction = async (act) => {
             const { type, timeout } = act;
             const actionTimeout = timeout || 10000;
             let result = null;
 
             switch (type) {
-                    case 'navigate':
-                    case 'goto':
-                        logs.push(`Navigating to: ${resolveMaybe(act.value)}`);
-                        await page.goto(resolveMaybe(act.value), { waitUntil: 'domcontentloaded' });
-                        result = page.url();
-                        break;
-                    case 'click':
-                        logs.push(`Clicking: ${resolveMaybe(act.selector)}`);
-                        await page.waitForSelector(resolveMaybe(act.selector), { timeout: actionTimeout });
-
-                        // Neutral Dead Click
-                        if (deadClicks && Math.random() < 0.4) {
-                            logs.push('Performing neutral dead-click...');
-                            const viewport = page.viewportSize() || { width: 1280, height: 720 };
-                            await page.mouse.click(
-                                10 + Math.random() * (viewport.width * 0.2),
-                                10 + Math.random() * (viewport.height * 0.2)
-                            );
-                            await page.waitForTimeout(baseDelay(200));
-                        }
-
-                        // Get element point for human-like movement
-                        const handle = await page.$(resolveMaybe(act.selector));
-                        const box = await handle.boundingBox();
-                        if (box) {
-                            const centerX = box.x + box.width / 2 + (Math.random() - 0.5) * 5;
-                            const centerY = box.y + box.height / 2 + (Math.random() - 0.5) * 5;
-                            await moveMouseHumanlike(page, centerX, centerY);
-                            if (deadClicks && Math.random() < 0.25) {
-                                const offsetX = (Math.random() - 0.5) * Math.min(20, box.width / 3);
-                                const offsetY = (Math.random() - 0.5) * Math.min(20, box.height / 3);
-                                await page.mouse.click(centerX + offsetX, centerY + offsetY, { delay: baseDelay(30) });
-                                await page.waitForTimeout(baseDelay(120));
-                            }
-                        }
-
-                        await page.waitForTimeout(baseDelay(50));
-                        await page.click(resolveMaybe(act.selector), {
-                            delay: baseDelay(50)
-                        });
+                case 'navigate':
+                case 'goto':
+                    logs.push(`Navigating to: ${resolveMaybe(act.value)}`);
+                    await page.goto(resolveMaybe(act.value), { waitUntil: 'domcontentloaded' });
+                    result = page.url();
+                    break;
+                case 'click': {
+                    const selectorValue = resolveMaybe(act.selector);
+                    const coords = parseCoords(String(selectorValue || ''));
+                    logs.push(`Clicking: ${selectorValue}`);
+                    if (coords) {
+                        await page.mouse.click(coords.x, coords.y, { delay: baseDelay(50) });
                         result = true;
                         break;
+                    }
+                    await page.waitForSelector(selectorValue, { timeout: actionTimeout });
+
+                    // Neutral Dead Click
+                    if (deadClicks && Math.random() < 0.4) {
+                        logs.push('Performing neutral dead-click...');
+                        const viewport = page.viewportSize() || { width: 1280, height: 720 };
+                        await page.mouse.click(
+                            10 + Math.random() * (viewport.width * 0.2),
+                            10 + Math.random() * (viewport.height * 0.2)
+                        );
+                        await page.waitForTimeout(baseDelay(200));
+                    }
+
+                    // Get element point for human-like movement
+                    const handle = await page.$(selectorValue);
+                    const box = await handle.boundingBox();
+                    if (box) {
+                        const centerX = box.x + box.width / 2 + (Math.random() - 0.5) * 5;
+                        const centerY = box.y + box.height / 2 + (Math.random() - 0.5) * 5;
+                        await moveMouseHumanlike(page, centerX, centerY);
+                        if (deadClicks && Math.random() < 0.25) {
+                            const offsetX = (Math.random() - 0.5) * Math.min(20, box.width / 3);
+                            const offsetY = (Math.random() - 0.5) * Math.min(20, box.height / 3);
+                            await page.mouse.click(centerX + offsetX, centerY + offsetY, { delay: baseDelay(30) });
+                            await page.waitForTimeout(baseDelay(120));
+                        }
+                    }
+
+                    await page.waitForTimeout(baseDelay(50));
+                    await page.click(selectorValue, {
+                        delay: baseDelay(50)
+                    });
+                    result = true;
+                    break;
+                }
                     case 'type':
                     case 'fill':
                         if (act.selector) {
-                            logs.push(`Typing into ${resolveMaybe(act.selector)}: ${resolveMaybe(act.value)}`);
-                            await page.waitForSelector(resolveMaybe(act.selector), { timeout: actionTimeout });
+                            const selectorValue = resolveMaybe(act.selector);
+                            const coords = parseCoords(String(selectorValue || ''));
+                            logs.push(`Typing into ${selectorValue}: ${resolveMaybe(act.value)}`);
+                            if (coords) {
+                                await page.mouse.click(coords.x, coords.y, { delay: baseDelay(50) });
+                                if (humanTyping) {
+                                    await humanType(page, null, resolveMaybe(act.value), { allowTypos, naturalTyping, fatigue });
+                                } else {
+                                    await page.keyboard.type(resolveMaybe(act.value), { delay: baseDelay(50) });
+                                }
+                                result = resolveMaybe(act.value);
+                                break;
+                            }
+                            await page.waitForSelector(selectorValue, { timeout: actionTimeout });
                             if (humanTyping) {
-                                await humanType(page, resolveMaybe(act.selector), resolveMaybe(act.value), { allowTypos, naturalTyping, fatigue });
+                                await humanType(page, selectorValue, resolveMaybe(act.value), { allowTypos, naturalTyping, fatigue });
                             } else {
-                                await page.fill(resolveMaybe(act.selector), resolveMaybe(act.value));
+                                await page.fill(selectorValue, resolveMaybe(act.value));
                             }
                         } else {
                             logs.push(`Typing (global): ${resolveMaybe(act.value)}`);
@@ -716,21 +831,29 @@ async function handleAgent(req, res) {
                         }
                         result = resolveMaybe(act.value);
                         break;
-                    case 'hover':
-                        logs.push(`Hovering: ${resolveMaybe(act.selector)}`);
-                        await page.waitForSelector(resolveMaybe(act.selector), { timeout: actionTimeout });
-                        {
-                            const handle = await page.$(resolveMaybe(act.selector));
-                            const box = handle && await handle.boundingBox();
-                            if (box) {
-                                const centerX = box.x + box.width / 2 + (Math.random() - 0.5) * 5;
-                                const centerY = box.y + box.height / 2 + (Math.random() - 0.5) * 5;
-                                await moveMouseHumanlike(page, centerX, centerY);
-                            }
-                        }
-                        await page.waitForTimeout(baseDelay(150));
+                case 'hover': {
+                    const selectorValue = resolveMaybe(act.selector);
+                    const coords = parseCoords(String(selectorValue || ''));
+                    logs.push(`Hovering: ${selectorValue}`);
+                    if (coords) {
+                        await moveMouseHumanlike(page, coords.x, coords.y);
                         result = true;
                         break;
+                    }
+                    await page.waitForSelector(selectorValue, { timeout: actionTimeout });
+                    {
+                        const handle = await page.$(selectorValue);
+                        const box = handle && await handle.boundingBox();
+                        if (box) {
+                            const centerX = box.x + box.width / 2 + (Math.random() - 0.5) * 5;
+                            const centerY = box.y + box.height / 2 + (Math.random() - 0.5) * 5;
+                            await moveMouseHumanlike(page, centerX, centerY);
+                        }
+                    }
+                    await page.waitForTimeout(baseDelay(150));
+                    result = true;
+                    break;
+                }
                     case 'press':
                         logs.push(`Pressing key: ${resolveMaybe(act.key)}`);
                         await page.keyboard.press(resolveMaybe(act.key), { delay: baseDelay(50) });
@@ -757,21 +880,61 @@ async function handleAgent(req, res) {
                         await page.selectOption(resolveMaybe(act.selector), resolveMaybe(act.value));
                         result = resolveMaybe(act.value);
                         break;
-                    case 'scroll':
+                    case 'scroll': {
                         const amount = act.value ? parseInt(resolveMaybe(act.value), 10) : (400 + Math.random() * 400);
-                        logs.push(`Scrolling page: ${amount}px...`);
+                        const speedMs = act.key ? parseInt(resolveMaybe(act.key), 10) : 500;
+                        const durationMs = Number.isFinite(speedMs) && speedMs > 0 ? speedMs : 500;
+                        logs.push(`Scrolling page: ${amount}px over ${durationMs}ms...`);
                         if (overscroll) {
                             await overshootScroll(page, amount);
+                            await page.waitForTimeout(baseDelay(200));
                         } else if (act.selector) {
-                            await page.evaluate(({ selector, y }) => {
+                            await page.evaluate(({ selector, y, duration }) => {
                                 const el = document.querySelector(selector);
-                                if (el) el.scrollBy({ top: y, behavior: 'smooth' });
-                            }, { selector: resolveMaybe(act.selector), y: amount });
+                                if (!el) return;
+                                const start = el.scrollTop;
+                                const target = start + y;
+                                const startTime = performance.now();
+                                const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+                                const step = (now) => {
+                                    const elapsed = now - startTime;
+                                    const t = Math.min(1, elapsed / duration);
+                                    const next = start + (target - start) * easeOut(t);
+                                    el.scrollTop = next;
+                                    if (t < 1) requestAnimationFrame(step);
+                                };
+                                requestAnimationFrame(step);
+                            }, { selector: resolveMaybe(act.selector), y: amount, duration: durationMs });
+                            await page.waitForTimeout(baseDelay(durationMs));
                         } else {
-                            await page.evaluate((y) => window.scrollBy({ top: y, behavior: 'smooth' }), amount);
+                            await page.evaluate(({ y, duration }) => {
+                                const start = window.scrollY || 0;
+                                const target = start + y;
+                                const startTime = performance.now();
+                                const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+                                const step = (now) => {
+                                    const elapsed = now - startTime;
+                                    const t = Math.min(1, elapsed / duration);
+                                    const next = start + (target - start) * easeOut(t);
+                                    window.scrollTo(0, next);
+                                    if (t < 1) requestAnimationFrame(step);
+                                };
+                                requestAnimationFrame(step);
+                            }, { y: amount, duration: durationMs });
+                            await page.waitForTimeout(baseDelay(durationMs));
                         }
-                        await page.waitForTimeout(baseDelay(500));
                         result = amount;
+                        break;
+                    }
+                    case 'screenshot':
+                        logs.push('Capturing screenshot...');
+                        try {
+                            const shotUrl = await captureScreenshot(act.label || act.value || '');
+                            result = shotUrl;
+                            logs.push(`Screenshot saved: ${shotUrl}`);
+                        } catch (e) {
+                            logs.push(`Screenshot failed: ${e.message}`);
+                        }
                         break;
                     case 'javascript':
                         logs.push('Running custom JavaScript...');
@@ -939,7 +1102,8 @@ async function handleAgent(req, res) {
             if (act.type === 'while') {
                 try {
                     reportProgress(runId, { actionId: act.id, status: 'running' });
-                    const condition = await evalCondition(act.value);
+                    const hasStructured = act.conditionVarType || act.conditionOp || act.conditionVar || act.conditionValue;
+                    const condition = hasStructured ? evalStructuredCondition(act) : await evalCondition(act.value);
                     setBlockOutput(condition);
                     logs.push(`While condition: ${condition ? 'true' : 'false'}`);
                     reportProgress(runId, { actionId: act.id, status: 'success' });
@@ -964,17 +1128,19 @@ async function handleAgent(req, res) {
                 reportProgress(runId, { actionId: act.id, status: 'running' });
                 const rawCount = parseInt(resolveMaybe(act.value) || '0', 10);
                 const count = Number.isFinite(rawCount) ? rawCount : 0;
-                const state = repeatState.get(index) || { remaining: count };
-                repeatState.set(index, state);
+                let state = repeatState.get(index);
+                if (!state) {
+                    state = { remaining: count };
+                    repeatState.set(index, state);
+                }
                 if (state.remaining <= 0) {
                     repeatState.delete(index);
                     reportProgress(runId, { actionId: act.id, status: 'success' });
                     index = (startToEnd[index] ?? index) + 1;
                     continue;
                 }
-                state.remaining -= 1;
-                logs.push(`Repeat block: ${state.remaining + 1} remaining`);
-                setBlockOutput(state.remaining + 1);
+                logs.push(`Repeat block: ${state.remaining} remaining`);
+                setBlockOutput(state.remaining);
                 reportProgress(runId, { actionId: act.id, status: 'success' });
                 index += 1;
                 continue;
@@ -1014,11 +1180,15 @@ async function handleAgent(req, res) {
                     }
                     if (startAction.type === 'repeat') {
                         const state = repeatState.get(startIndex);
-                        if (state && state.remaining > 0) {
-                            index = startIndex + 1;
-                            continue;
+                        if (state) {
+                            state.remaining -= 1;
+                            if (state.remaining > 0) {
+                                setBlockOutput(state.remaining);
+                                index = startIndex + 1;
+                                continue;
+                            }
+                            repeatState.delete(startIndex);
                         }
-                        repeatState.delete(startIndex);
                     }
                     if (startAction.type === 'foreach') {
                         const state = foreachState.get(startIndex);
@@ -1216,13 +1386,13 @@ async function handleAgent(req, res) {
         };
 
         // Ensure the public/screenshots directory exists
-        const screenshotsDir = path.join(__dirname, 'public', 'screenshots');
-        if (!fs.existsSync(screenshotsDir)) {
-            fs.mkdirSync(screenshotsDir, { recursive: true });
+        const capturesDir = path.join(__dirname, 'public', 'captures');
+        if (!fs.existsSync(capturesDir)) {
+            fs.mkdirSync(capturesDir, { recursive: true });
         }
 
-        const screenshotName = `agent_${Date.now()}.png`;
-        const screenshotPath = path.join(screenshotsDir, screenshotName);
+        const screenshotName = `${captureRunId}_agent_${Date.now()}.png`;
+        const screenshotPath = path.join(capturesDir, screenshotName);
         try {
             await page.screenshot({ path: screenshotPath, fullPage: false });
         } catch (e) {
@@ -1241,14 +1411,31 @@ async function handleAgent(req, res) {
             logs: logs || [],
             html: typeof cleanedHtml === 'string' ? safeFormatHTML(cleanedHtml) : '',
             data: formattedExtraction,
-            screenshot_url: fs.existsSync(screenshotPath) ? `/screenshots/${screenshotName}` : null
+            screenshot_url: fs.existsSync(screenshotPath) ? `/captures/${screenshotName}` : null
         };
 
+        const video = page.video();
         try { await context.storageState({ path: STORAGE_STATE_FILE }); } catch {}
+        try { await context.close(); } catch {}
+        if (video) {
+            try {
+                const videoPath = await video.path();
+                if (videoPath && fs.existsSync(videoPath)) {
+                    const recordingName = `${captureRunId}_agent_${Date.now()}.webm`;
+                    const recordingPath = path.join(capturesDir, recordingName);
+                    fs.renameSync(videoPath, recordingPath);
+                }
+            } catch (e) {
+                console.error('Recording save failed:', e.message);
+            }
+        }
         try { await browser.close(); } catch {}
         res.json(outputData);
     } catch (error) {
         console.error('Agent Error:', error);
+        try {
+            if (context) await context.close();
+        } catch {}
         if (browser) await browser.close();
         res.status(500).json({ error: 'Agent failed', details: error.message });
     }

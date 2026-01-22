@@ -28,6 +28,7 @@ export interface Action {
         | 'csv'
         | 'hover'
         | 'merge'
+        | 'screenshot'
         | 'if'
         | 'else'
         | 'end'
@@ -58,6 +59,7 @@ export interface Task {
     selector?: string;
     rotateUserAgents: boolean;
     rotateProxies: boolean;
+    rotateViewport: boolean;
     humanTyping: boolean;
     stealth: StealthConfig;
     actions: Action[];

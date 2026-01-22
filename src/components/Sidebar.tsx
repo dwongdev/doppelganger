@@ -1,10 +1,10 @@
-import { Plus, Home, Settings as SettingsIcon, LogOut, List } from 'lucide-react';
+import { Plus, Home, Settings as SettingsIcon, LogOut, History, Camera } from 'lucide-react';
 
 interface SidebarProps {
-    onNavigate: (screen: 'dashboard' | 'editor' | 'settings' | 'executions') => void;
+    onNavigate: (screen: 'dashboard' | 'editor' | 'settings' | 'executions' | 'captures') => void;
     onNewTask: () => void;
     onLogout: () => void;
-    currentScreen: 'dashboard' | 'editor' | 'settings' | 'executions';
+    currentScreen: 'dashboard' | 'editor' | 'settings' | 'executions' | 'captures';
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onNewTask, onLogout, currentScreen }) => {
@@ -43,7 +43,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onNewTask, onLogout, curr
                     className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${currentScreen === 'executions' ? 'bg-white/10 text-white' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}
                     title="Executions"
                 >
-                    <List className="w-6 h-6" />
+                    <History className="w-6 h-6" />
+                </button>
+                <button
+                    onClick={() => onNavigate('captures')}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${currentScreen === 'captures' ? 'bg-white/10 text-white' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}
+                    title="Captures"
+                >
+                    <Camera className="w-6 h-6" />
                 </button>
             </div>
 

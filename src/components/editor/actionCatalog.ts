@@ -10,6 +10,7 @@ export const ACTION_CATALOG: { type: Action['type']; label: string; description:
     { type: 'javascript', label: 'JavaScript', description: 'Run custom JS' },
     { type: 'csv', label: 'CSV', description: 'Parse CSV into rows' },
     { type: 'merge', label: 'Merge', description: 'Merge inputs into a single output' },
+    { type: 'screenshot', label: 'Screenshot', description: 'Capture a screenshot' },
     { type: 'if', label: 'If', description: 'Conditional block start' },
     { type: 'else', label: 'Else', description: 'Conditional alternate path' },
     { type: 'end', label: 'End Block', description: 'Close a block' },

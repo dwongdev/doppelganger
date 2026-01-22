@@ -3,6 +3,7 @@ const { JSDOM } = require('jsdom');
 const fs = require('fs');
 const path = require('path');
 const { getProxySelection } = require('./proxy-rotation');
+const { selectUserAgent } = require('./user-agent-settings');
 
 const STORAGE_STATE_PATH = path.join(__dirname, 'storage_state.json');
 const STORAGE_STATE_FILE = (() => {
@@ -16,12 +17,6 @@ const STORAGE_STATE_FILE = (() => {
     } catch {}
     return STORAGE_STATE_PATH;
 })();
-
-const userAgents = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
-];
 
 const csvEscape = (value) => {
     const text = value === undefined || value === null ? '' : String(value);
@@ -79,6 +74,10 @@ async function handleScrape(req, res) {
     const waitInput = req.body.wait || req.query.wait;
     const waitTime = waitInput ? parseFloat(waitInput) * 1000 : 2000;
     const rotateUserAgents = req.body.rotateUserAgents || req.query.rotateUserAgents || false;
+    const rotateViewportRaw = req.body.rotateViewport ?? req.query.rotateViewport;
+    const rotateViewport = String(rotateViewportRaw).toLowerCase() === 'true' || rotateViewportRaw === true;
+    const runId = req.body.runId || req.query.runId || null;
+    const captureRunId = runId ? String(runId) : `run_${Date.now()}_unknown`;
     const rotateProxiesRaw = req.body.rotateProxies ?? req.query.rotateProxies;
     const rotateProxies = String(rotateProxiesRaw).toLowerCase() === 'true' || rotateProxiesRaw === true;
     const includeShadowDomRaw = req.body.includeShadowDom ?? req.query.includeShadowDom;
@@ -94,12 +93,11 @@ async function handleScrape(req, res) {
 
     console.log(`Scraping: ${url}`);
 
-    // Pick a random UA if rotation is enabled, otherwise use the first one
-    const selectedUA = rotateUserAgents
-        ? userAgents[Math.floor(Math.random() * userAgents.length)]
-        : userAgents[0];
+    const selectedUA = selectUserAgent(rotateUserAgents);
 
     let browser;
+    let context;
+    let page;
     try {
         // Use 'chrome' channel to use a real installed browser instead of default Chromium
         const launchOptions = {
@@ -120,26 +118,97 @@ async function handleScrape(req, res) {
         console.log(`[PROXY] Mode: ${selection.mode}; Target: ${selection.proxy ? selection.proxy.server : 'host_ip'}`);
         browser = await chromium.launch(launchOptions);
 
+        const recordingsDir = path.join(__dirname, 'data', 'recordings');
+        if (!fs.existsSync(recordingsDir)) {
+            fs.mkdirSync(recordingsDir, { recursive: true });
+        }
+
+        const viewport = rotateViewport
+            ? { width: 1280 + Math.floor(Math.random() * 640), height: 720 + Math.floor(Math.random() * 360) }
+            : { width: 1366, height: 768 };
+
         const contextOptions = {
             userAgent: selectedUA,
             extraHTTPHeaders: customHeaders,
-            viewport: { width: 1280 + Math.floor(Math.random() * 640), height: 720 + Math.floor(Math.random() * 360) },
+            viewport,
             deviceScaleFactor: 1,
             locale: 'en-US',
             timezoneId: 'America/New_York',
             colorScheme: 'dark',
-            permissions: ['geolocation']
+            permissions: ['geolocation'],
+            recordVideo: { dir: recordingsDir }
         };
 
         if (fs.existsSync(STORAGE_STATE_FILE)) {
             contextOptions.storageState = STORAGE_STATE_FILE;
         }
 
-        const context = await browser.newContext(contextOptions);
+        context = await browser.newContext(contextOptions);
 
         // Manual WebDriver Patch
         await context.addInitScript(() => {
             Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        });
+        await context.addInitScript(() => {
+            const cursorId = 'dg-cursor-overlay';
+            const dotId = 'dg-click-dot';
+            if (document.getElementById(cursorId)) return;
+            const cursor = document.createElement('div');
+            cursor.id = cursorId;
+            cursor.style.cssText = [
+                'position:fixed',
+                'top:0',
+                'left:0',
+                'width:18px',
+                'height:18px',
+                'margin-left:-9px',
+                'margin-top:-9px',
+                'border:2px solid rgba(56,189,248,0.7)',
+                'background:rgba(56,189,248,0.25)',
+                'border-radius:50%',
+                'box-shadow:0 0 10px rgba(56,189,248,0.6)',
+                'pointer-events:none',
+                'z-index:2147483647',
+                'transform:translate3d(0,0,0)',
+                'transition:transform 60ms ease-out'
+            ].join(';');
+            const dot = document.createElement('div');
+            dot.id = dotId;
+            dot.style.cssText = [
+                'position:fixed',
+                'top:0',
+                'left:0',
+                'width:10px',
+                'height:10px',
+                'margin-left:-5px',
+                'margin-top:-5px',
+                'background:rgba(239,68,68,0.9)',
+                'border-radius:50%',
+                'box-shadow:0 0 12px rgba(239,68,68,0.8)',
+                'pointer-events:none',
+                'z-index:2147483647',
+                'opacity:0',
+                'transform:translate3d(0,0,0) scale(0.6)',
+                'transition:opacity 120ms ease, transform 120ms ease'
+            ].join(';');
+            document.documentElement.appendChild(cursor);
+            document.documentElement.appendChild(dot);
+            const move = (x, y) => {
+                cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+            };
+            window.addEventListener('mousemove', (e) => move(e.clientX, e.clientY), { passive: true });
+            window.addEventListener('click', (e) => {
+                dot.style.left = `${e.clientX}px`;
+                dot.style.top = `${e.clientY}px`;
+                dot.style.opacity = '1';
+                dot.style.transform = 'translate3d(0,0,0) scale(1)';
+                cursor.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) scale(0.65)`;
+                setTimeout(() => {
+                    dot.style.opacity = '0';
+                    dot.style.transform = 'translate3d(0,0,0) scale(0.6)';
+                    cursor.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) scale(1)`;
+                }, 180);
+            }, true);
         });
         if (includeShadowDom) {
             await context.addInitScript(() => {
@@ -152,7 +221,7 @@ async function handleScrape(req, res) {
             });
         }
 
-        const page = await context.newPage();
+        page = await context.newPage();
 
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
@@ -343,13 +412,13 @@ async function handleScrape(req, res) {
         const extraction = await runExtractionScript(extractionScript, productHtml, page.url());
 
         // Ensure the public/screenshots directory exists
-        const screenshotsDir = path.join(__dirname, 'public', 'screenshots');
-        if (!fs.existsSync(screenshotsDir)) {
-            fs.mkdirSync(screenshotsDir, { recursive: true });
+        const capturesDir = path.join(__dirname, 'public', 'captures');
+        if (!fs.existsSync(capturesDir)) {
+            fs.mkdirSync(capturesDir, { recursive: true });
         }
 
-        const screenshotName = `scrape_${Date.now()}.png`;
-        const screenshotPath = path.join(screenshotsDir, screenshotName);
+        const screenshotName = `${captureRunId}_scrape_${Date.now()}.png`;
+        const screenshotPath = path.join(capturesDir, screenshotName);
         try {
             await page.screenshot({ path: screenshotPath, fullPage: false });
         } catch (e) {
@@ -380,16 +449,34 @@ async function handleScrape(req, res) {
             links: await page.$$eval('a[href]', elements => {
                 return elements.map(el => el.href).filter(href => href && href.startsWith('http'));
             }),
-            screenshot_url: `/screenshots/${screenshotName}`
+            screenshot_url: `/captures/${screenshotName}`
         };
 
         // Save session state
         await context.storageState({ path: STORAGE_STATE_FILE });
 
+        const video = page.video();
+        await context.close();
+        if (video) {
+            try {
+                const videoPath = await video.path();
+                if (videoPath && fs.existsSync(videoPath)) {
+                    const recordingName = `${captureRunId}_scrape_${Date.now()}.webm`;
+                    const recordingPath = path.join(capturesDir, recordingName);
+                    fs.renameSync(videoPath, recordingPath);
+                }
+            } catch (e) {
+                console.error('Recording save failed:', e.message);
+            }
+        }
+
         await browser.close();
         res.json(data);
     } catch (error) {
         console.error('Scrape Error:', error);
+        try {
+            if (context) await context.close();
+        } catch {}
         if (browser) await browser.close();
         res.status(500).json({ error: 'Failed to scrape', details: error.message });
     }

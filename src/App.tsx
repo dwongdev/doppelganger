@@ -9,6 +9,7 @@ import SettingsScreen from './components/SettingsScreen';
 import LoadingScreen from './components/LoadingScreen';
 import ExecutionsScreen from './components/ExecutionsScreen';
 import ExecutionDetailScreen from './components/ExecutionDetailScreen';
+import CapturesScreen from './components/CapturesScreen';
 import NotFoundScreen from './components/NotFoundScreen';
 import CenterAlert from './components/app/CenterAlert';
 import CenterConfirm from './components/app/CenterConfirm';
@@ -121,6 +122,7 @@ export default function App() {
         selector: "",
         rotateUserAgents: false,
         rotateProxies: false,
+        rotateViewport: false,
         humanTyping: false,
         stealth: {
             allowTypos: false,
@@ -256,6 +258,7 @@ export default function App() {
             selector: "",
             rotateUserAgents: false,
             rotateProxies: false,
+            rotateViewport: false,
             humanTyping: false,
             stealth: {
                 allowTypos: false,
@@ -316,6 +319,7 @@ export default function App() {
             };
         }
         if (migratedTask.rotateProxies === undefined) migratedTask.rotateProxies = false;
+        if (migratedTask.rotateViewport === undefined) migratedTask.rotateViewport = false;
         if (!migratedTask.extractionFormat) migratedTask.extractionFormat = 'json';
         if (migratedTask.includeShadowDom === undefined) migratedTask.includeShadowDom = true;
         const normalized = ensureActionIds(migratedTask);
@@ -637,6 +641,7 @@ export default function App() {
         if (location.pathname.startsWith('/tasks')) return 'editor';
         if (location.pathname === '/settings') return 'settings';
         if (location.pathname === '/executions') return 'executions';
+        if (location.pathname === '/captures') return 'captures';
         return 'dashboard';
     };
 
@@ -655,6 +660,8 @@ export default function App() {
                             navigate('/settings');
                         } else if (s === 'executions') {
                             navigate('/executions');
+                        } else if (s === 'captures') {
+                            navigate('/captures');
                         }
                     }}
                     onNewTask={createNewTask}
@@ -699,6 +706,7 @@ export default function App() {
                     } />
                     <Route path="/executions" element={<ExecutionsScreen onConfirm={requestConfirm} onNotify={showAlert} />} />
                     <Route path="/executions/:id" element={<ExecutionDetailScreen onConfirm={requestConfirm} onNotify={showAlert} />} />
+                    <Route path="/captures" element={<CapturesScreen onConfirm={requestConfirm} onNotify={showAlert} />} />
                     <Route path="*" element={<NotFoundScreen onBack={() => navigate('/dashboard')} />} />
                 </Routes>
             </div>

@@ -21,7 +21,8 @@ import {
     Square,
     AlertTriangle,
     PlayCircle,
-    Table
+    Table,
+    Camera
 } from 'lucide-react';
 import { Task, TaskMode, ViewMode, VarType, Action, Results, ConfirmRequest } from '../types';
 import RichInput from './RichInput';
@@ -311,6 +312,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         if (type === 'merge') base.varName = '';
         if (type === 'start') base.value = '';
         if (type === 'if') {
+            base.conditionVar = '';
+            base.conditionVarType = 'string';
+            base.conditionOp = 'equals';
+            base.conditionValue = '';
+        }
+        if (type === 'while') {
             base.conditionVar = '';
             base.conditionVarType = 'string';
             base.conditionOp = 'equals';
@@ -719,6 +726,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                         if (type === 'javascript') return <Code className={`${iconClass} text-yellow-300`} />;
                                                         if (type === 'csv') return <Table className={`${iconClass} text-emerald-300`} />;
                                                         if (type === 'merge') return <Layers className={`${iconClass} text-emerald-200`} />;
+                                                        if (type === 'screenshot') return <Camera className={`${iconClass} text-emerald-300`} />;
                                                         if (type === 'start') return <PlayCircle className={`${iconClass} text-emerald-300`} />;
                                                         return <span className="text-[9px] text-white/20">|</span>;
                                                     };
@@ -809,6 +817,19 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                             </div>
                                                         </div>
                                                     )}
+                                                    {action.type === 'scroll' && (
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[7px] font-bold text-gray-600 uppercase tracking-widest pl-1">Scroll Speed (ms)</label>
+                                                            <div className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[11px] focus-within:border-white/20 transition-all">
+                                                                <RichInput
+                                                                    value={action.key || ''}
+                                                                    onChange={(v) => updateAction(action.id, { key: v })}
+                                                                    variables={currentTask.variables}
+                                                                    placeholder="500"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
 
                                                     {(action.type === 'type' || action.type === 'wait' || action.type === 'scroll' || action.type === 'javascript' || action.type === 'csv') && (
                                                         <div className="space-y-1.5">
@@ -850,6 +871,20 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                                         placeholder={action.type === 'type' ? 'Search keywords' : action.type === 'wait' ? '3' : '400'}
                                                                     />
                                                                 )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {action.type === 'screenshot' && (
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[7px] font-bold text-gray-600 uppercase tracking-widest pl-1">Label (Optional)</label>
+                                                            <div className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[11px] focus-within:border-white/20 transition-all">
+                                                                <RichInput
+                                                                    value={action.value || ''}
+                                                                    onChange={(v) => updateAction(action.id, { value: v })}
+                                                                    variables={currentTask.variables}
+                                                                    placeholder="checkout-step"
+                                                                />
                                                             </div>
                                                         </div>
                                                     )}
@@ -946,19 +981,83 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                         );
                                                     })()}
 
-                                                    {action.type === 'while' && (
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[7px] font-bold text-gray-600 uppercase tracking-widest pl-1">Condition (JS)</label>
-                                                            <div className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[11px] focus-within:border-white/20 transition-all">
-                                                                <RichInput
-                                                                    value={action.value || ''}
-                                                                    onChange={(v) => updateAction(action.id, { value: v })}
-                                                                    variables={currentTask.variables}
-                                                                    placeholder="exists('.login') && text('h1').includes('Welcome')"
-                                                                />
+                                                    {action.type === 'while' && (() => {
+                                                        const varKeys = Object.keys(currentTask.variables || {});
+                                                        const normalizedVar = normalizeVarName(action.conditionVar || '');
+                                                        const inferredType = normalizedVar && currentTask.variables?.[normalizedVar]?.type;
+                                                        const varType = action.conditionVarType || inferredType || 'string';
+                                                        const ops = conditionOps[varType as VarType] || conditionOps.string;
+                                                        const opValue = action.conditionOp || ops[0].value;
+                                                        return (
+                                                            <div className="space-y-2">
+                                                                <label className="text-[7px] font-bold text-gray-600 uppercase tracking-widest pl-1">Condition</label>
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                                    <div className="space-y-1">
+                                                                        <span className="text-[7px] font-bold text-gray-500 uppercase tracking-widest pl-1">Variable</span>
+                                                                        <input
+                                                                            type="text"
+                                                                            list={`while-var-${action.id}`}
+                                                                            value={action.conditionVar || ''}
+                                                                            onChange={(e) => updateAction(action.id, { conditionVar: e.target.value })}
+                                                                            placeholder="variable name"
+                                                                            className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white"
+                                                                        />
+                                                                        {varKeys.length > 0 && (
+                                                                            <datalist id={`while-var-${action.id}`}>
+                                                                                {varKeys.map((key) => (
+                                                                                    <option key={key} value={key} />
+                                                                                ))}
+                                                                            </datalist>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <span className="text-[7px] font-bold text-gray-500 uppercase tracking-widest pl-1">Type</span>
+                                                                        <select
+                                                                            value={varType}
+                                                                            onChange={(e) => {
+                                                                                const nextType = e.target.value as VarType;
+                                                                                const nextOps = conditionOps[nextType] || conditionOps.string;
+                                                                                updateAction(action.id, {
+                                                                                    conditionVarType: nextType,
+                                                                                    conditionOp: nextOps[0].value,
+                                                                                    conditionValue: nextType === 'boolean' ? '' : action.conditionValue || ''
+                                                                                });
+                                                                            }}
+                                                                            className="custom-select w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-[8px] font-bold uppercase text-white/60"
+                                                                        >
+                                                                            <option value="string">String</option>
+                                                                            <option value="number">Number</option>
+                                                                            <option value="boolean">Boolean</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <span className="text-[7px] font-bold text-gray-500 uppercase tracking-widest pl-1">Relation</span>
+                                                                        <select
+                                                                            value={opValue}
+                                                                            onChange={(e) => updateAction(action.id, { conditionOp: e.target.value })}
+                                                                            className="custom-select w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-[8px] font-bold uppercase text-white/60"
+                                                                        >
+                                                                            {ops.map((opt) => (
+                                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                {varType !== 'boolean' && (
+                                                                    <div className="space-y-1">
+                                                                        <span className="text-[7px] font-bold text-gray-500 uppercase tracking-widest pl-1">Value</span>
+                                                                        <input
+                                                                            type={varType === 'number' ? 'number' : 'text'}
+                                                                            value={action.conditionValue || ''}
+                                                                            onChange={(e) => updateAction(action.id, { conditionValue: e.target.value })}
+                                                                            placeholder={varType === 'number' ? '0' : 'value'}
+                                                                            className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white"
+                                                                        />
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        </div>
-                                                    )}
+                                                        );
+                                                    })()}
 
                                                     {action.type === 'repeat' && (
                                                         <div className="space-y-1.5">
@@ -1291,6 +1390,15 @@ return JSON.stringify(links, null, 2);`}
                                 <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all cursor-pointer group">
                                     <input
                                         type="checkbox"
+                                        checked={currentTask.rotateViewport}
+                                        onChange={(e) => setCurrentTask({ ...currentTask, rotateViewport: e.target.checked })}
+                                        className="w-4 h-4 rounded border-white/20 bg-transparent"
+                                    />
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-white">Rotate Viewport</span>
+                                </label>
+                                <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all cursor-pointer group">
+                                    <input
+                                        type="checkbox"
                                         checked={currentTask.includeShadowDom !== false}
                                         onChange={(e) => setCurrentTask({ ...currentTask, includeShadowDom: e.target.checked })}
                                         className="w-4 h-4 rounded border-white/20 bg-transparent"
@@ -1444,6 +1552,14 @@ return JSON.stringify(links, null, 2);`}
                                     conditionOp: 'equals',
                                     conditionValue: ''
                                 });
+                            } else if (type === 'while') {
+                                updateAction(actionPaletteTargetId, {
+                                    type,
+                                    conditionVar: '',
+                                    conditionVarType: 'string',
+                                    conditionOp: 'equals',
+                                    conditionValue: ''
+                                });
                             } else {
                                 updateAction(actionPaletteTargetId, { type });
                             }
@@ -1499,6 +1615,7 @@ return JSON.stringify(links, null, 2);`}
                     pinnedResults={pinnedResults}
                     isExecuting={isExecuting}
                     isHeadful={currentTask.mode === 'headful'}
+                    runId={runId}
                     onConfirm={onConfirm}
                     onNotify={onNotify}
                     onPin={onPinResults}
