@@ -993,6 +993,11 @@ app.get('/settings', requireAuth, (req, res) => {
     res.sendFile(path.join(DIST_DIR, 'index.html'));
 });
 
+// Captures
+app.get('/captures', requireAuth, (req, res) => {
+    res.sendFile(path.join(DIST_DIR, 'index.html'));
+});
+
 // Executions (SPA routes)
 app.get('/executions', requireAuth, (req, res) => {
     res.sendFile(path.join(DIST_DIR, 'index.html'));
