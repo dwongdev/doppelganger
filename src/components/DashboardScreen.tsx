@@ -1,4 +1,4 @@
-import { X, Globe, Download, Upload } from 'lucide-react';
+import { X, Globe, Download, Upload, Rocket } from 'lucide-react';
 import { useRef } from 'react';
 import { Task } from '../types';
 
@@ -124,7 +124,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ tasks, onNewTask, onE
 
                 {tasks.length === 0 && (
                     <div className="flex-1 flex flex-col items-center justify-center space-y-6 opacity-20">
-                        <div className="w-20 h-20 border-2 border-dashed border-white rounded-[40px] flex items-center justify-center text-3xl">🚀</div>
+                        <div className="w-20 h-20 border-2 border-dashed border-white rounded-[40px] flex items-center justify-center text-3xl">
+                            <Rocket className="w-8 h-8 text-white/70" />
+                        </div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.3em]">No Tasks Found</p>
                     </div>
                 )}
