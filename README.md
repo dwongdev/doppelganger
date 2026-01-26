@@ -7,6 +7,13 @@ Doppelganger is a self-hosted, developer-focused browser automation and extracti
 
 This project is designed for local, controlled use cases. It does not claim to bypass protections and does not encourage unlawful activity.
 
+## Demo
+
+<video controls>
+  <source src="demo-run.webm" type="video/webm">
+  Your browser does not support the video tag.
+</video>
+
 ## Getting Started (npm)
 
 ### Install
