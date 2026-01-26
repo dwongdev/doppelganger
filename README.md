@@ -11,8 +11,6 @@ This project is designed for local, controlled use cases. It does not claim to b
 
 <img src="demo-run.gif" alt="Dashboard task demo" style="max-width:100%;height:auto;border:1px solid #ccc;">
 
-The bundled `demo-run.gif` (repo root) shows launching the dashboard, creating a task, and executing it.
-
 ## Getting Started (npm)
 
 ### Install
