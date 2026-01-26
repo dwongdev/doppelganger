@@ -48,6 +48,7 @@ export interface Action {
     conditionVarType?: VarType;
     conditionOp?: string;
     conditionValue?: string;
+    typeMode?: 'append' | 'replace';
 }
 
 export interface Task {

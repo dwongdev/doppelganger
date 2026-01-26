@@ -9,7 +9,6 @@ This project is designed for local, controlled use cases. It does not claim to b
 
 <img src="demo-run.gif" alt="Dashboard task demo" style="max-width:100%;height:auto;border:1px solid #ccc;">
 
-
 ## Getting Started (Docker)
 
 ### Requirements
@@ -32,6 +31,19 @@ docker run -d \
   -v $(pwd)/public:/app/public \
   -v $(pwd)/storage_state.json:/app/storage_state.json \
   mnemosyneai/doppelganger
+```
+
+Open the dashboard at:
+```
+http://localhost:11345
+```
+
+### Session Secret
+Set a strong, unique secret via `SESSION_SECRET` before starting the container.
+
+Example:
+```bash
+export SESSION_SECRET="$(node -e 'console.log(require("crypto").randomBytes(32).toString("hex"))')"
 ```
 
 ### Update to Latest
@@ -59,19 +71,6 @@ npm i @doppelgangerdev/doppelganger
 ### Run
 ```bash
 npx doppelganger
-```
-
-Open the dashboard at:
-```
-http://localhost:11345
-```
-
-### Session Secret
-Set a strong, unique secret via `SESSION_SECRET` before starting the container.
-
-Example:
-```bash
-export SESSION_SECRET="$(node -e 'console.log(require("crypto").randomBytes(32).toString("hex"))')"
 ```
 
 ## Usage
@@ -127,7 +126,7 @@ curl -X POST http://localhost:11345/tasks/task_123/api \
 ```
 
 ### Egress Proxy Rotation
-Doppelganger can rotate outbound browser traffic using a `proxies.json` file.
+Doppelganger can rotate outbound browser traffic using a `proxies.json` file or via the UI.
 
 Supported locations:
 - `data/proxies.json`

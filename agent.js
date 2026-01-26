@@ -801,37 +801,52 @@ async function handleAgent(req, res) {
                     break;
                 }
                     case 'type':
-                    case 'fill':
-                        if (act.selector) {
-                            const selectorValue = resolveMaybe(act.selector);
-                            const coords = parseCoords(String(selectorValue || ''));
-                            logs.push(`Typing into ${selectorValue}: ${resolveMaybe(act.value)}`);
+                    case 'fill': {
+                        const selectorValue = act.selector ? resolveMaybe(act.selector) : null;
+                        const valueText = resolveMaybe(act.value) || '';
+                        const typeMode = act.typeMode === 'append' ? 'append' : 'replace';
+                        const humanOptions = { allowTypos, naturalTyping, fatigue };
+
+                        const typeIntoSelector = async () => {
+                            if (!selectorValue) return;
+                            if (typeMode === 'replace') {
+                                if (humanTyping) {
+                                    await page.fill(selectorValue, '');
+                                    await humanType(page, selectorValue, valueText, humanOptions);
+                                } else {
+                                    await page.fill(selectorValue, valueText);
+                                }
+                                return;
+                            }
+                            if (humanTyping) {
+                                await humanType(page, selectorValue, valueText, humanOptions);
+                            } else {
+                                await page.type(selectorValue, valueText, { delay: baseDelay(50) });
+                            }
+                        };
+
+                        if (selectorValue) {
+                            const coords = parseCoords(String(selectorValue));
+                            logs.push(`Typing into ${selectorValue}: ${valueText}`);
                             if (coords) {
                                 await page.mouse.click(coords.x, coords.y, { delay: baseDelay(50) });
-                                if (humanTyping) {
-                                    await humanType(page, null, resolveMaybe(act.value), { allowTypos, naturalTyping, fatigue });
-                                } else {
-                                    await page.keyboard.type(resolveMaybe(act.value), { delay: baseDelay(50) });
-                                }
-                                result = resolveMaybe(act.value);
+                                await typeIntoSelector();
+                                result = valueText;
                                 break;
                             }
                             await page.waitForSelector(selectorValue, { timeout: actionTimeout });
-                            if (humanTyping) {
-                                await humanType(page, selectorValue, resolveMaybe(act.value), { allowTypos, naturalTyping, fatigue });
-                            } else {
-                                await page.fill(selectorValue, resolveMaybe(act.value));
-                            }
+                            await typeIntoSelector();
                         } else {
-                            logs.push(`Typing (global): ${resolveMaybe(act.value)}`);
+                            logs.push(`Typing (global): ${valueText}`);
                             if (humanTyping) {
-                                await humanType(page, null, resolveMaybe(act.value), { allowTypos, naturalTyping, fatigue });
+                                await humanType(page, null, valueText, humanOptions);
                             } else {
-                                await page.keyboard.type(resolveMaybe(act.value), { delay: baseDelay(50) });
+                                await page.keyboard.type(valueText, { delay: baseDelay(50) });
                             }
                         }
-                        result = resolveMaybe(act.value);
+                        result = valueText;
                         break;
+                    }
                 case 'hover': {
                     const selectorValue = resolveMaybe(act.selector);
                     const coords = parseCoords(String(selectorValue || ''));

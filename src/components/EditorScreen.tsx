@@ -63,6 +63,11 @@ const PRESS_BASE_KEYS = [
     .concat([...Array(10)].map((_, i) => `${i}`))
     .concat(Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)));
 
+const TYPE_MODE_OPTIONS = [
+    { value: 'replace', label: 'Replace Text' },
+    { value: 'append', label: 'Append Text' }
+];
+
 const parsePressKey = (key?: string) => {
     if (!key) return { modifiers: [] as string[], baseKey: '' };
     const parts = key.split('+');
@@ -354,6 +359,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         if (type === 'set') base.varName = '';
         if (type === 'merge') base.varName = '';
         if (type === 'start') base.value = '';
+        if (type === 'type') base.typeMode = 'replace';
         if (type === 'if') {
             base.conditionVar = '';
             base.conditionVarType = 'string';
@@ -915,6 +921,26 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                                     />
                                                                 )}
                                                             </div>
+                                                            {action.type === 'type' && (
+                                                                <div className="space-y-1.5">
+                                                                    <label className="text-[7px] font-bold text-gray-600 uppercase tracking-widest pl-1">Mode</label>
+                                                                    <div className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-[11px] focus-within:border-white/20 transition-all">
+                                                                        <select
+                                                                            value={action.typeMode || 'replace'}
+                                                                            onChange={(e) =>
+                                                                                updateAction(action.id, { typeMode: e.target.value as 'append' | 'replace' })
+                                                                            }
+                                                                            className="custom-select w-full bg-transparent border-none px-0 py-0 text-[11px] text-white"
+                                                                        >
+                                                                            {TYPE_MODE_OPTIONS.map((option) => (
+                                                                                <option key={option.value} value={option.value}>
+                                                                                    {option.label}
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
 
