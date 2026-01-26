@@ -1,7 +1,7 @@
 # Security Policy
 
 ## Reporting a Vulnerability
-If you discover a security issue, send an email to `security@doppelgangerdev.com` with:
+If you discover a security issue, send an email to `admin@doppelgangerdev.com` with:
 - the npm or container version and tag you were using
 - a description of the issue and how to reproduce it
 - any relevant logs or screenshots
