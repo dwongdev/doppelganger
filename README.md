@@ -9,17 +9,6 @@ This project is designed for local, controlled use cases. It does not claim to b
 
 <img src="demo-run.gif" alt="Dashboard task demo" style="max-width:100%;height:auto;border:1px solid #ccc;">
 
-## Getting Started (npm)
-
-### Install
-```bash
-npm i @doppelgangerdev/doppelganger
-```
-
-### Run
-```bash
-npx doppelganger
-```
 
 ## Getting Started (Docker)
 
@@ -43,6 +32,18 @@ docker run -d \
   -v $(pwd)/public:/app/public \
   -v $(pwd)/storage_state.json:/app/storage_state.json \
   mnemosyneai/doppelganger
+```
+
+## Getting Started (npm)
+
+### Install
+```bash
+npm i @doppelgangerdev/doppelganger
+```
+
+### Run
+```bash
+npx doppelganger
 ```
 
 Open the dashboard at:
