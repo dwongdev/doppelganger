@@ -157,6 +157,13 @@ Proxy rotation also respects `data/proxies.json` (see below), and `data/allowed_
 - Run `node agent.js --help` to see flags like `--task`, `--browser`, or `--version`. These runners share the same settings (API key, proxies, storage) as the web UI.
 - When connecting via the API key, prefer `Authorization: Bearer <key>` so reverse proxies can normalize headers; the CLI also accepts a `--api-key` flag for scripted runs.
 
+### Agent capabilities
+
+- Tasks use the JSON schema outlined in `AGENT_SPEC.md`, including mode/modes (`agent`/`block`), wait times, selectors, and stealth flags.
+- Support for all action types in the spec (`click`, `type`, `wait`, `press`, `scroll`, `javascript`, `csv`, `hover`, `merge`, `screenshot`, `if/else/end`, loops, `foreach`, `stop`, `set`, `on_error`, `start`), so you can encode complex flows.
+- Variable templating ( `{$var}` ), structured conditions, and helper functions such as `exists()`, `text()`, and `block` output ensure reusable, data-driven tasks.
+- Extraction scripts run in the browser context after the page renders; you can return JSON/CSV by reading DOM nodes directly as documented in `AGENT_SPEC.md`.
+
 # Proxies
 
 Proxies can be defined via the UI or `data/proxies.json`:
@@ -231,6 +238,24 @@ Authentication enforces sessions (`/api/auth/login`, `/api/auth/logout`, `/api/a
 - Keep `data/` and `storage_state.json` backed up if you rely on historical cookies or proxies.
 - Release updates by pulling `mnemosyneai/doppelganger` (Docker) or `npm i @doppelgangerdev/doppelganger` (npm). The Settings view always displays the current package version.
 - Contributions: follow `.github/` templates, respect `CONTRIBUTING.md`, and run available lint/test scripts if you touch critical areas.
+
+# Roadmap
+
+- [x] **Settings shortcuts** — the System tab already exposes API key regeneration, user agent selection, and layout preferences so operators can tune them without leaving the UI.
+- [x] **Storage cleanup** — the Settings data tab lets you clear captures and cookies, and the backend exposes `/api/clear-screenshots` and `/api/clear-cookies`.
+- [x] **IP rotation tooling** — build a settings workflow for importing proxies and automatically rotating them.
+- [x] **API key workflow** — the API key panel already supports regenerating and copying keys via `/api/settings/api-key`, so secure API access is ready without extra setup.
+- [x] **Task proxy rotation toggle** — the “Rotate Proxies” option in each task ties into the Settings rotation controls, enabling rotation per execution.
+- [ ] *Recording controls** — Add a toggle for disabling automated recording when needed.
+- [ ] **File downloads** — add explicit support for agent tasks to download files (PDFs, CSVs, etc.) directly from target pages, then surface those downloads in the UI so users can preview or export them without sifting through captures.
+- [ ] **Stateless mode** — add a lightweight “stateless” execution path that spins up browsers without touching the shared `storage_state.json`, ideal for sensitive workflows that should never persist cookies or local storage between runs.
+- [ ] **Extraction response mode** — add a Settings switch so users can choose whether the UI returns HTML+data (for debugging) or data-only payloads when extraction scripts run.
+- [ ] **Folder organization** — group tasks, assets, and captures into named folders so operators can browse, filter, and download collections per workflow.
+- [ ] **Stable capture retention** — add a long-term capture history view with filtering, pinning, and archiving so teams can keep compliance records.
+- [ ] **Workspace templates** — allow saving and sharing workspace presets (layout + default proxies/agents) so new team members can onboard with pre-configured setups.
+- [ ] **Geo-targeted exits** — allow choosing proxy regions for tasks so you can pin the apparent location before running a job.
+- [ ] **Session recording redaction** — add toggles to redact sensitive fields (passwords, credit cards) from recordings/logs before storing them.
+- [ ] **AI-assisted fixing** — add an “AI auto-fix” helper that suggests layout, selector, and proxy tweaks after failed runs, letting teams approve or discard the proposed changes without switching contexts.
 
 # Security Considerations
 
