@@ -246,12 +246,14 @@ Authentication enforces sessions (`/api/auth/login`, `/api/auth/logout`, `/api/a
 - [x] **IP rotation tooling** — build a settings workflow for importing proxies and automatically rotating them.
 - [x] **API key workflow** — the API key panel already supports regenerating and copying keys via `/api/settings/api-key`, so secure API access is ready without extra setup.
 - [x] **Task proxy rotation toggle** — the “Rotate Proxies” option in each task ties into the Settings rotation controls, enabling rotation per execution.
+- [ ] **Action key combos** — add modifier shortcuts (e.g., Ctrl+Click, Shift+Scroll) so tasks can more closely mirror real user interactions.
+- [ ] **Click-and-drag block** — add an action that does drag gestures (selecting text, moving items) so tasks can simulate click-and-drag flows.
 - [ ] **Recording controls** — Add a toggle for disabling automated recording when needed.
 - [ ] **File downloads** — add explicit support for agent tasks to download files (PDFs, CSVs, etc.) directly from target pages, then surface those downloads in the UI so users can preview or export them without sifting through captures.
 - [ ] **Stateless mode** — add a lightweight “stateless” execution path that spins up browsers without touching the shared `storage_state.json`, ideal for sensitive workflows that should never persist cookies or local storage between runs.
 - [ ] **Extraction response mode** — add a Settings switch so users can choose whether the UI returns HTML+data (for debugging) or data-only payloads when extraction scripts run.
 - [ ] **Folder organization** — group tasks, assets, and captures into named folders so operators can browse, filter, and download collections per workflow.
-- [ ] **Stable capture retention** — add a long-term capture history view with filtering, pinning, and archiving so teams can keep compliance records.
+- [ ] **Stable capture retention** — add filtering, pinning, and archiving in captures tab so teams can keep compliance records.
 - [ ] **Workspace templates** — allow saving and sharing workspace presets (layout + default proxies/agents) so new team members can onboard with pre-configured setups.
 - [ ] **Geo-targeted exits** — allow choosing proxy regions for tasks so you can pin the apparent location before running a job.
 - [ ] **Session recording redaction** — add toggles to redact sensitive fields (passwords, credit cards) from recordings/logs before storing them.
