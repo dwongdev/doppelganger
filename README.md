@@ -75,6 +75,8 @@ docker run -d \
 
 Visit `http://localhost:11345`. Stop/start with `docker stop/start doppelganger`.
 
+> The first visit loads the login/setup screen. After you create the admin account and sign in, the dashboard replaces the login view and stays visible for as long as the session remains valid; returning users are redirected straight to the dashboard until they explicitly log out or the session expires.
+
 ## Local Development (npm)
 
 1. Install dependencies:
