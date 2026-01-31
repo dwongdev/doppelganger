@@ -20,22 +20,24 @@
 2.2. These rights are fully unrestricted for Internal / Private Use.
 2.3. Redistribution or commercial use is subject to Sections 3-5.
 
-3. Commercial / End-User-Facing Use Obligations
-3.1. Notice Requirement: Users engaging in Commercial / End-User-Facing Use must notify Authors by:
-     (a) Sending an email to [licensing@doppelgangerdev.com], or
-     (b) No response from Authors is required for the use to be valid.
-3.2. Hybrid Submission / Open-Source Requirement: Users must provide the modified or used portion of the Software by either:
-     (a) Open-sourcing the portion (in which case the repository URL must be included in the Commercial Use Statement), or
-     (b) Submitting it to the Authors privately (Authors do not gain the right to publicly release or open-source that portion).
-3.3. Licensing Flexibility:
-     (a) Users may license the submitted/open-sourced portion under any license they choose.
-     (b) Authors automatically retain the Inspirative Use License (IUL) over submitted portions regardless of the user's chosen license.
-3.4. Attribution Requirement: All Commercial / End-User-Facing deployments must display clear attribution to Authors in product UI, documentation, outputs, or other public-facing materials.
-3.5. Examples of Use Cases (specific but not limiting):
-     (a) Internal price monitoring dashboards: Treated as Internal / Private Use (no notice, attribution, or open-source required).
-     (b) A user-facing AI that can browse the web (even if browsing is not its core feature): Treated as External / Commercial Use (notice, attribution, and open-source or submission required).
-     (c) Internal research deployment of modified software on intranet: Treated as Internal / Private Use (no obligations).
-     (d) Public-facing analytics service for clients: Treated as Commercial / End-User-Facing Use (obligations apply).
+3. Commercial / End-User-Facing Use Rights and Obligations
+
+3.1. Notice: Users engaging in Commercial or End-User-Facing Use may notify Authors by
+   (a) Sending an email to [licensing@doppelgangerdev.com], or  
+   (b) No response from Authors is required for the use to be valid.  
+
+3.2. Original Code Display Restrictions
+   (a) Authors may not publicly release, show, or distribute the Submitted Code as-is in a way that identifies it as the User's original code unless the User explicitly chooses to open-source it or ask otherwise in the submission.  
+   (b) Authors retain full rights to use, modify, incorporate, and commercialize derivatives of the Submitted Code in any project, product, or service.  
+
+3.3. Attribution Requirement 
+   (a) Authors shall credit the User as a source of inspiration in public documentation or product materials only if the Submitted Code is explicitly designated as open-source.
+   (b) To maintain the privacy protections in Section 3.2, no attribution shall be provided for submissions not intended for public release, unless otherwise agreed upon in writing.
+
+3.4. Licensing Flexibility
+   (a) Users may license any modifications or submissions they choose.  
+   (b) Authors’ rights to use, modify, or commercialize derivative works remain fully valid regardless of any license Users attach to their submissions.  
+
 
 4. Documentation, Blogs, Tutorials, And Media
 4.1. Documentation, blogs, blog images, tutorials, guides, promotional materials, or other creative content created by Authors are not included in this Software License.
