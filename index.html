@@ -12,19 +12,84 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <script>
-        window.TallyConfig = {
-            "formId": "gDG42l",
-            "popup": {
-                "emoji": {
-                    "text": "👋",
-                    "animation": "wave"
-                },
-                "formEventsForwarding": true,
-                "showOnce": true,
-                "autoClose": 3000,
-                "doNotShowAfterSubmit": true
+        (function () {
+            const formId = 'gDG42l';
+            const popupOptions = {
+                emoji: { text: '👋', animation: 'wave' },
+                formEventsForwarding: true,
+                showOnce: true,
+                autoClose: 3000,
+                doNotShowAfterSubmit: true
+            };
+            const editorDelay = 60000;
+
+            const ensureTallyReady = (callback) => {
+                if (window.Tally) {
+                    callback();
+                    return;
+                }
+                const intervalId = window.setInterval(() => {
+                    if (window.Tally) {
+                        window.clearInterval(intervalId);
+                        callback();
+                    }
+                }, 200);
+            };
+
+            let hasOpened = false;
+            let timerId;
+            const openPopup = () => {
+                if (hasOpened) return;
+                hasOpened = true;
+                ensureTallyReady(() => {
+                    if (window.Tally) {
+                        window.Tally.openPopup(formId, popupOptions);
+                    }
+                });
+            };
+
+            const cancelTimer = () => {
+                if (timerId) {
+                    clearTimeout(timerId);
+                    timerId = undefined;
+                }
+            };
+
+            const startEditorTimer = () => {
+                if (hasOpened || timerId) return;
+                timerId = window.setTimeout(openPopup, editorDelay);
+            };
+
+            const onLocationChange = () => {
+                if (hasOpened) {
+                    cancelTimer();
+                    return;
+                }
+                const path = window.location.pathname || '';
+                if (path.startsWith('/tasks')) {
+                    startEditorTimer();
+                } else {
+                    cancelTimer();
+                }
+            };
+
+            const wrapHistory = (method) => {
+                const original = window.history[method];
+                return function () {
+                    const result = original.apply(this, arguments);
+                    onLocationChange();
+                    return result;
+                };
+            };
+
+            if (window.history && window.history.pushState && window.history.replaceState) {
+                window.history.pushState = wrapHistory('pushState');
+                window.history.replaceState = wrapHistory('replaceState');
             }
-        };
+
+            window.addEventListener('popstate', onLocationChange);
+            onLocationChange();
+        })();
     </script>
 
     <script async src="https://tally.so/widgets/embed.js"></script>
