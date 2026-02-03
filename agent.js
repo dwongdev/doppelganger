@@ -178,6 +178,8 @@ async function handleAgent(req, res) {
         : !(String(includeShadowDomRaw).toLowerCase() === 'false' || includeShadowDomRaw === false);
     const disableRecordingRaw = data.disableRecording ?? req.query.disableRecording;
     const disableRecording = parseBooleanFlag(disableRecordingRaw);
+    const statelessExecutionRaw = data.statelessExecution ?? req.query.statelessExecution;
+    const statelessExecution = parseBooleanFlag(statelessExecutionRaw);
     const {
         allowTypos = false,
         idleMovements = false,
@@ -452,7 +454,8 @@ async function handleAgent(req, res) {
             permissions: ['geolocation'],
         };
 
-        if (fs.existsSync(STORAGE_STATE_FILE)) {
+        const shouldUseStorageState = !statelessExecution && fs.existsSync(STORAGE_STATE_FILE);
+        if (shouldUseStorageState) {
             contextOptions.storageState = STORAGE_STATE_FILE;
         }
 
@@ -1444,7 +1447,9 @@ async function handleAgent(req, res) {
         };
 
         const video = page.video();
-        try { await context.storageState({ path: STORAGE_STATE_FILE }); } catch {}
+        if (!statelessExecution) {
+            try { await context.storageState({ path: STORAGE_STATE_FILE }); } catch {}
+        }
         try { await context.close(); } catch {}
         if (video) {
             try {

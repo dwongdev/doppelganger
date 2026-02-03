@@ -1515,6 +1515,15 @@ return JSON.stringify(links, null, 2);`}
                                     />
                                     <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-white">Disable automated recording</span>
                                 </label>
+                                <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={!!currentTask.statelessExecution}
+                                        onChange={(e) => setCurrentTask({ ...currentTask, statelessExecution: e.target.checked })}
+                                        className="w-4 h-4 rounded border-white/20 bg-transparent"
+                                    />
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-white">Stateless execution (no shared cookies)</span>
+                                </label>
                             </div>
                         </div>
                     )}

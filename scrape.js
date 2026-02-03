@@ -93,6 +93,8 @@ async function handleScrape(req, res) {
         : !(String(includeShadowDomRaw).toLowerCase() === 'false' || includeShadowDomRaw === false);
     const disableRecordingRaw = req.body.disableRecording ?? req.query.disableRecording;
     const disableRecording = parseBooleanFlag(disableRecordingRaw);
+    const statelessExecutionRaw = req.body.statelessExecution ?? req.query.statelessExecution;
+    const statelessExecution = parseBooleanFlag(statelessExecutionRaw);
     const extractionScript = req.body.extractionScript || req.query.extractionScript;
     const extractionFormat = (req.body.extractionFormat || req.query.extractionFormat) === 'csv' ? 'csv' : 'json';
 
@@ -148,7 +150,8 @@ async function handleScrape(req, res) {
             permissions: ['geolocation']
         };
 
-        if (fs.existsSync(STORAGE_STATE_FILE)) {
+        const shouldUseStorageState = !statelessExecution && fs.existsSync(STORAGE_STATE_FILE);
+        if (shouldUseStorageState) {
             contextOptions.storageState = STORAGE_STATE_FILE;
         }
 
@@ -466,7 +469,9 @@ async function handleScrape(req, res) {
         };
 
         // Save session state
-        await context.storageState({ path: STORAGE_STATE_FILE });
+        if (!statelessExecution) {
+            await context.storageState({ path: STORAGE_STATE_FILE });
+        }
 
         const video = page.video();
         await context.close();

@@ -17,6 +17,13 @@ const STORAGE_STATE_FILE = (() => {
     return STORAGE_STATE_PATH;
 })();
 
+const parseBooleanFlag = (value) => {
+    if (typeof value === 'boolean') return value;
+    if (value === undefined || value === null) return false;
+    const normalized = String(value).toLowerCase();
+    return normalized === 'true' || normalized === '1';
+};
+
 let activeSession = null;
 
 const teardownActiveSession = async () => {
@@ -25,7 +32,7 @@ const teardownActiveSession = async () => {
         if (activeSession.interval) clearInterval(activeSession.interval);
     } catch {}
     try {
-        if (activeSession.context) {
+        if (activeSession.context && !activeSession.stateless) {
             await activeSession.context.storageState({ path: STORAGE_STATE_FILE });
         }
     } catch {}
@@ -42,11 +49,13 @@ async function handleHeadful(req, res) {
         await teardownActiveSession();
     }
 
-    activeSession = { status: 'starting', startedAt: Date.now() };
-
     const url = req.body.url || req.query.url || 'https://www.google.com';
     const rotateProxiesRaw = req.body.rotateProxies ?? req.query.rotateProxies;
     const rotateProxies = String(rotateProxiesRaw).toLowerCase() === 'true' || rotateProxiesRaw === true;
+    const statelessExecutionRaw = req.body.statelessExecution ?? req.query.statelessExecution;
+    const statelessExecution = parseBooleanFlag(statelessExecutionRaw);
+
+    activeSession = { status: 'starting', startedAt: Date.now(), stateless: statelessExecution };
 
     const selectedUA = selectUserAgent(false);
 
@@ -78,7 +87,7 @@ async function handleHeadful(req, res) {
             timezoneId: 'America/New_York'
         };
 
-        if (fs.existsSync(STORAGE_STATE_FILE)) {
+        if (!statelessExecution && fs.existsSync(STORAGE_STATE_FILE)) {
             console.log('Loading existing storage state...');
             contextOptions.storageState = STORAGE_STATE_FILE;
         }
@@ -174,6 +183,7 @@ async function handleHeadful(req, res) {
 
         // Function to save state
         const saveState = async () => {
+            if (statelessExecution) return;
             try {
                 await context.storageState({ path: STORAGE_STATE_FILE });
                 console.log('Storage state saved successfully.');
@@ -185,7 +195,7 @@ async function handleHeadful(req, res) {
         // Auto-save every 10 seconds while the window is open
         const interval = setInterval(saveState, 10000);
 
-        activeSession = { browser, context, interval, status: 'running', startedAt: activeSession.startedAt };
+        activeSession = { browser, context, interval, status: 'running', startedAt: activeSession.startedAt, stateless: statelessExecution };
 
         // Save when the page is closed
         page.on('close', async () => {
@@ -197,7 +207,7 @@ async function handleHeadful(req, res) {
         res.json({
             message: 'Headful session started. Close the browser window or call /headful/stop to end.',
             userAgentUsed: selectedUA,
-            path: STORAGE_STATE_FILE
+            path: statelessExecution ? null : STORAGE_STATE_FILE
         });
 
         // Wait for the browser to disconnect (user closes the last window)

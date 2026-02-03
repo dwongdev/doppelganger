@@ -151,7 +151,8 @@ export default function App() {
         actions: [],
         variables: {},
         includeShadowDom: true,
-        disableRecording: false
+        disableRecording: false,
+        statelessExecution: false
     } as Task);
 
 
@@ -342,7 +343,8 @@ export default function App() {
             variables: {},
             extractionFormat: 'json',
             includeShadowDom: true,
-            disableRecording: false
+            disableRecording: false,
+            statelessExecution: false
         };
     }
 
@@ -402,6 +404,8 @@ export default function App() {
         if (migratedTask.includeShadowDom === undefined) migratedTask.includeShadowDom = true;
         if (migratedTask.disableRecording === undefined) migratedTask.disableRecording = false;
         migratedTask.disableRecording = parseBooleanFlag(migratedTask.disableRecording);
+        if (migratedTask.statelessExecution === undefined) migratedTask.statelessExecution = false;
+        migratedTask.statelessExecution = parseBooleanFlag(migratedTask.statelessExecution);
         const normalized = ensureActionIds(migratedTask);
         setCurrentTask(normalized);
         markTaskAsSaved(normalized);
@@ -682,6 +686,8 @@ export default function App() {
         if (merged.rotateProxies === undefined) merged.rotateProxies = false;
         if (merged.disableRecording === undefined) merged.disableRecording = false;
         merged.disableRecording = parseBooleanFlag(merged.disableRecording);
+        if (merged.statelessExecution === undefined) merged.statelessExecution = false;
+        merged.statelessExecution = parseBooleanFlag(merged.statelessExecution);
         delete merged.versions;
         delete merged.last_opened;
         return merged;

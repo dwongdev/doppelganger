@@ -70,6 +70,7 @@ export interface Task {
     extractionFormat?: 'json' | 'csv';
     includeShadowDom?: boolean;
     disableRecording?: boolean;
+    statelessExecution?: boolean;
     versions?: TaskVersion[];
 }
 
