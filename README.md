@@ -2,27 +2,6 @@
 
 # Doppelganger — Browser Automation for Everyone
 
-<div align="center">
-  <a href="https://doppelgangerdev.com">
-    <img src="https://img.shields.io/badge/Website-doppelgangerdev.com-0056ff?style=for-the-badge&logo=googlechrome&rounded=true" alt="Website" />
-  </a>
-  <a href="https://doppelgangerdev.com/docs">
-    <img src="https://img.shields.io/badge/Docs-doppelgangerdev.com%2Fdocs-00c2ff?style=for-the-badge&logo=readthedocs&rounded=true" alt="Docs" />
-  </a>
-  <a href="https://forum.doppelgangerdev.com">
-    <img src="https://img.shields.io/badge/Forum-forum.doppelgangerdev.com-ff9900?style=for-the-badge&logo=discourse&rounded=true" alt="Forum" />
-  </a>
-  <a href="https://opensource.org/">
-    <img src="https://img.shields.io/badge/Open_Source-Yes-0056ff?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="Open Source" />
-  </a>
-  <a href="https://www.npmjs.com/package/@doppelgangerdev/doppelganger">
-    <img src="https://img.shields.io/badge/Version-0.5.5-6a8cff?style=for-the-badge&logo=npm&rounded=true" alt="Version" />
-  </a>
-  <a href="https://hub.docker.com/r/mnemosyneai/doppelganger">
-    <img src="https://img.shields.io/badge/Docker-mnemosyneai%2Fdoppelganger-0db7ed?style=for-the-badge&logo=docker&rounded=true" alt="Docker" />
-  </a>
-</div>
-
 Doppelganger is a self‑hosted, block-first automation control plane built for teams that want predictable, auditable browser workflows without pushing sensitive data to third‑party SaaS. It bundles a React/Vite frontend, an Express/Playwright backend, helper scripts, and optional CLI tooling so you can sketch blocks, inject JavaScript, rotate proxies, and run everything locally.
 
 ![Demo run](https://raw.githubusercontent.com/mnemosyne-artificial-intelligence/doppelganger/main/demo-run.gif)
