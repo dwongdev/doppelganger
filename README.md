@@ -250,7 +250,7 @@ Authentication enforces sessions (`/api/auth/login`, `/api/auth/logout`, `/api/a
 - [x] **Task proxy rotation toggle** — the “Rotate Proxies” option in each task ties into the Settings rotation controls, enabling rotation per execution.
 - [ ] **Action key combos** — add modifier shortcuts (e.g., Ctrl+Click, Shift+Scroll) so tasks can more closely mirror real user interactions.
 - [ ] **Click-and-drag block** — add an action that does drag gestures (selecting text, moving items) so tasks can simulate click-and-drag flows.
-- [ ] **Recording controls** — Add a toggle for disabling automated recording when needed.
+- [x] **Recording controls** — Task editor now exposes a “Disable automated recording” switch in the general settings panel so workflows can skip video capture on a per-task basis.
 - [ ] **File downloads** — add explicit support for agent tasks to download files (PDFs, CSVs, etc.) directly from target pages, then surface those downloads in the UI so users can preview or export them without sifting through captures.
 - [ ] **Stateless mode** — add a lightweight “stateless” execution path that spins up browsers without touching the shared `storage_state.json`, ideal for sensitive workflows that should never persist cookies or local storage between runs.
 - [ ] **Extraction response mode** — add a Settings switch so users can choose whether the UI returns HTML+data (for debugging) or data-only payloads when extraction scripts run.

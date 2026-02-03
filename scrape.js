@@ -67,6 +67,13 @@ const toCsvString = (raw) => {
     return [headerLine, ...lines].join('\n');
 };
 
+const parseBooleanFlag = (value) => {
+    if (typeof value === 'boolean') return value;
+    if (value === undefined || value === null) return false;
+    const normalized = String(value).toLowerCase();
+    return normalized === 'true' || normalized === '1';
+};
+
 async function handleScrape(req, res) {
     const url = req.body.url || req.query.url;
     const customHeaders = req.body.headers || {};
@@ -84,6 +91,8 @@ async function handleScrape(req, res) {
     const includeShadowDom = includeShadowDomRaw === undefined
         ? true
         : !(String(includeShadowDomRaw).toLowerCase() === 'false' || includeShadowDomRaw === false);
+    const disableRecordingRaw = req.body.disableRecording ?? req.query.disableRecording;
+    const disableRecording = parseBooleanFlag(disableRecordingRaw);
     const extractionScript = req.body.extractionScript || req.query.extractionScript;
     const extractionFormat = (req.body.extractionFormat || req.query.extractionFormat) === 'csv' ? 'csv' : 'json';
 
@@ -136,12 +145,15 @@ async function handleScrape(req, res) {
             locale: 'en-US',
             timezoneId: 'America/New_York',
             colorScheme: 'dark',
-            permissions: ['geolocation'],
-            recordVideo: { dir: recordingsDir, size: viewport }
+            permissions: ['geolocation']
         };
 
         if (fs.existsSync(STORAGE_STATE_FILE)) {
             contextOptions.storageState = STORAGE_STATE_FILE;
+        }
+
+        if (!disableRecording) {
+            contextOptions.recordVideo = { dir: recordingsDir, size: viewport };
         }
 
         context = await browser.newContext(contextOptions);

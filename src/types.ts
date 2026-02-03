@@ -69,6 +69,7 @@ export interface Task {
     extractionScript?: string;
     extractionFormat?: 'json' | 'csv';
     includeShadowDom?: boolean;
+    disableRecording?: boolean;
     versions?: TaskVersion[];
 }
 

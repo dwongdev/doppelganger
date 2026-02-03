@@ -113,6 +113,12 @@ async function overshootScroll(page, targetY) {
 const punctuationPause = /[.,!?;:]/;
 
 const randomBetween = (min, max) => min + Math.random() * (max - min);
+const parseBooleanFlag = (value) => {
+    if (typeof value === 'boolean') return value;
+    if (value === undefined || value === null) return false;
+    const normalized = String(value).toLowerCase();
+    return normalized === 'true' || normalized === '1';
+};
 
 async function humanType(page, selector, text, options = {}) {
     const { allowTypos = false, naturalTyping = false, fatigue = false } = options;
@@ -170,6 +176,8 @@ async function handleAgent(req, res) {
     const includeShadowDom = includeShadowDomRaw === undefined
         ? true
         : !(String(includeShadowDomRaw).toLowerCase() === 'false' || includeShadowDomRaw === false);
+    const disableRecordingRaw = data.disableRecording ?? req.query.disableRecording;
+    const disableRecording = parseBooleanFlag(disableRecordingRaw);
     const {
         allowTypos = false,
         idleMovements = false,
@@ -442,13 +450,15 @@ async function handleAgent(req, res) {
             timezoneId: 'America/New_York',
             colorScheme: 'dark',
             permissions: ['geolocation'],
-            recordVideo: { dir: recordingsDir, size: viewport }
         };
 
         if (fs.existsSync(STORAGE_STATE_FILE)) {
             contextOptions.storageState = STORAGE_STATE_FILE;
         }
 
+        if (!disableRecording) {
+            contextOptions.recordVideo = { dir: recordingsDir, size: viewport };
+        }
         context = await browser.newContext(contextOptions);
 
         await context.addInitScript(() => {

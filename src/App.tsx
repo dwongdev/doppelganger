@@ -75,6 +75,12 @@ export default function App() {
         if (resolver) resolver(result);
     };
     const formatLabel = (value: string) => value ? value[0].toUpperCase() + value.slice(1) : value;
+    const parseBooleanFlag = (value: any) => {
+        if (typeof value === 'boolean') return value;
+        if (value === undefined || value === null) return false;
+        const normalized = String(value).toLowerCase();
+        return normalized === 'true' || normalized === '1';
+    };
     const ensureActionIds = (task: Task) => {
         if (!task.actions || !Array.isArray(task.actions)) return task;
         let changed = false;
@@ -144,7 +150,8 @@ export default function App() {
         },
         actions: [],
         variables: {},
-        includeShadowDom: true
+        includeShadowDom: true,
+        disableRecording: false
     } as Task);
 
 
@@ -334,7 +341,8 @@ export default function App() {
             actions: [],
             variables: {},
             extractionFormat: 'json',
-            includeShadowDom: true
+            includeShadowDom: true,
+            disableRecording: false
         };
     }
 
@@ -392,6 +400,8 @@ export default function App() {
         if (migratedTask.rotateViewport === undefined) migratedTask.rotateViewport = false;
         if (!migratedTask.extractionFormat) migratedTask.extractionFormat = 'json';
         if (migratedTask.includeShadowDom === undefined) migratedTask.includeShadowDom = true;
+        if (migratedTask.disableRecording === undefined) migratedTask.disableRecording = false;
+        migratedTask.disableRecording = parseBooleanFlag(migratedTask.disableRecording);
         const normalized = ensureActionIds(migratedTask);
         setCurrentTask(normalized);
         markTaskAsSaved(normalized);
@@ -670,6 +680,8 @@ export default function App() {
         if (!merged.variables || Array.isArray(merged.variables)) merged.variables = {};
         if (!Array.isArray(merged.actions)) merged.actions = [];
         if (merged.rotateProxies === undefined) merged.rotateProxies = false;
+        if (merged.disableRecording === undefined) merged.disableRecording = false;
+        merged.disableRecording = parseBooleanFlag(merged.disableRecording);
         delete merged.versions;
         delete merged.last_opened;
         return merged;
