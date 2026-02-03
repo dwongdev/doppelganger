@@ -36,12 +36,15 @@
 3.4. Reciprocal Grant-Back (The "Payment")
    (a) In exchange for Commercial Use, the User grants Authors a perpetual, worldwide, royalty-free, irrevocable license to use, modify, and commercialize the modified portions or extensions provided under Section 3.1.
    (b) This grant-back ensures that the Authors benefit from the User's improvements to the logic while the User retains ownership of their unrelated proprietary systems.
-
+3.5. Clarification and Support
+   Users who are uncertain whether their intended deployment qualifies as Commercial or End-User-Facing Use may reach out to licensing@doppelgangerdev.com for guidance before proceeding. Contacting the Authors does not substitute for compliance, but it helps ensure the correct classification and any attendant obligations are understood. Users who choose to proceed as if the deployment is Commercial Use while awaiting guidance must still satisfy the delivery obligation if the Authors later confirm the deployment is commercial.
+3.6. Delivery Evidence and Enforcement
+   Failure to send the required delivery or sending it to the wrong address remains a violation only if the Authors determine that Commercial or End-User-Facing Use applies and the delivery was never received. Users bear the burden of proving compliance—keep timestamped emails, delivery receipts, transmission logs, or tracking numbers showing the dispatch. If the User can produce such evidence and the Authors cannot independently verify non-receipt, auditors will treat the obligation as satisfied. Authors claiming non-receipt must promptly notify the User in writing and cite corroborating evidence (for example, bounced email headers or delivery system failures); absence of that evidence will be interpreted in favor of the User. When Authors confirm they caused or acknowledged the delivery failure, the User will be excused because the Authors are responsible for that failure. If Authors determine the deployment is not Commercial Use, these delivery rules do not apply retroactively.
 
 4. Documentation, Blogs, Tutorials, And Media
 4.1. Documentation, blogs, blog images, tutorials, guides, promotional materials, or other creative content created by Authors are not included in this Software License.
-4.2. Such content is licensed separately under CC BY-SA 4.0, unless otherwise stated.
-4.3. Users may not claim ownership of, remove, or modify attribution for such content outside CC BY-SA 4.0 terms.
+4.2. Such content is licensed separately under CC BY-NC-ND 4.0, unless otherwise stated.
+4.3. Users may not claim ownership of, remove, or modify attribution for such content outside CC BY-NC-ND 4.0 terms.
 
 5. Third-Party Components
 5.1. The Software may include Third-Party Components subject to their own licenses.
