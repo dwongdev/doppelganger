@@ -1,4 +1,4 @@
-![Doppelganger Banner](banner.png)
+![Doppelganger Banner](https://raw.githubusercontent.com/mnemosyne-artificial-intelligence/doppelganger/main/banner.png)
 
 # Doppelganger — Browser Automation for Everyone
 
@@ -25,7 +25,7 @@
 
 Doppelganger is a self‑hosted, block-first automation control plane built for teams that want predictable, auditable browser workflows without pushing sensitive data to third‑party SaaS. It bundles a React/Vite frontend, an Express/Playwright backend, helper scripts, and optional CLI tooling so you can sketch blocks, inject JavaScript, rotate proxies, and run everything locally.
 
-![Demo run](demo-run.gif)
+![Demo run](https://raw.githubusercontent.com/mnemosyne-artificial-intelligence/doppelganger/main/demo-run.gif)
 
 # What You Get
 
