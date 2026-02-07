@@ -13,7 +13,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ status, onSubmit, error, busy =
     const [pass, setPass] = useState('');
     const [passConfirm, setPassConfirm] = useState('');
 
-    const handleSubmit = () => {
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
         onSubmit(email, pass, name, passConfirm);
     };
 
@@ -33,66 +34,80 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ status, onSubmit, error, busy =
                     </p>
                 </div>
 
-                <div className="space-y-4">
-                    {status === 'setup' && (
+                <form onSubmit={handleSubmit} className="space-y-8">
+                    <div className="space-y-4">
+                        {status === 'setup' && (
+                            <div className="space-y-2">
+                                <label htmlFor="auth-name" className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">Name</label>
+                                <input
+                                    id="auth-name"
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Full Name"
+                                    className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-white/30 transition-all placeholder:text-gray-600"
+                                    autoComplete="name"
+                                />
+                            </div>
+                        )}
                         <div className="space-y-2">
-                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">Name</label>
+                            <label htmlFor="auth-email" className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">Email</label>
                             <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="Full Name"
+                                id="auth-email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="user@example.com"
                                 className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-white/30 transition-all placeholder:text-gray-600"
+                                required
+                                autoComplete="email"
                             />
                         </div>
-                    )}
-                    <div className="space-y-2">
-                        <label className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">Email</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="user@example.com"
-                            className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-white/30 transition-all placeholder:text-gray-600"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">Password</label>
-                        <input
-                            type="password"
-                            value={pass}
-                            onChange={(e) => setPass(e.target.value)}
-                            placeholder="••••••••"
-                            className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-white/30 transition-all placeholder:text-gray-600"
-                        />
-                    </div>
-                    {status === 'setup' && (
                         <div className="space-y-2">
-                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">Confirm Password</label>
+                            <label htmlFor="auth-pass" className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">Password</label>
                             <input
+                                id="auth-pass"
                                 type="password"
-                                value={passConfirm}
-                                onChange={(e) => setPassConfirm(e.target.value)}
+                                value={pass}
+                                onChange={(e) => setPass(e.target.value)}
                                 placeholder="••••••••"
                                 className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-white/30 transition-all placeholder:text-gray-600"
+                                required
+                                autoComplete={status === 'setup' ? "new-password" : "current-password"}
                             />
                         </div>
-                    )}
-                </div>
-
-                <button
-                    onClick={handleSubmit}
-                    disabled={busy}
-                    className="shine-effect w-full bg-white text-black py-4 rounded-2xl font-bold text-[10px] tracking-[0.3em] uppercase hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-default"
-                >
-                    {buttonLabel}
-                </button>
-
-                {error && (
-                    <div className="text-[9px] font-bold text-red-500 text-center uppercase tracking-widest">
-                        {error}
+                        {status === 'setup' && (
+                            <div className="space-y-2">
+                                <label htmlFor="auth-pass-confirm" className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">Confirm Password</label>
+                                <input
+                                    id="auth-pass-confirm"
+                                    type="password"
+                                    value={passConfirm}
+                                    onChange={(e) => setPassConfirm(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-white/30 transition-all placeholder:text-gray-600"
+                                    required
+                                    autoComplete="new-password"
+                                />
+                            </div>
+                        )}
                     </div>
-                )}
+
+                    <button
+                        type="submit"
+                        disabled={busy}
+                        aria-busy={busy}
+                        className="shine-effect w-full bg-white text-black py-4 rounded-2xl font-bold text-[10px] tracking-[0.3em] uppercase hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-default"
+                    >
+                        {buttonLabel}
+                    </button>
+
+                    {error && (
+                        <div role="alert" className="text-[9px] font-bold text-red-500 text-center uppercase tracking-widest">
+                            {error}
+                        </div>
+                    )}
+                </form>
             </div>
         </div>
     );
