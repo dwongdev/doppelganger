@@ -412,11 +412,10 @@ const requireApiKey = async (req, res, next) => {
     const authHeader = req.get('authorization');
     const bearerKey = authHeader ? authHeader.replace(/^Bearer\s+/i, '') : '';
     const bodyKey = typeof req.body === 'string' ? req.body : null;
+    // Query params removed to satisfy CodeQL security check (sensitive data in query string)
     const providedKey =
         headerKey ||
         bearerKey ||
-        req.query.apiKey ||
-        req.query.key ||
         (req.body && (req.body.apiKey || req.body.key)) ||
         bodyKey;
 
@@ -506,7 +505,8 @@ app.get('/api/auth/me', (req, res) => {
 });
 
 // --- SETTINGS API ---
-app.get('/api/settings/api-key', requireAuthForSettings, async (req, res) => {
+// Rate limited because it accesses sensitive data (the API key)
+app.get('/api/settings/api-key', authRateLimiter, requireAuthForSettings, async (req, res) => {
     try {
         const apiKey = await loadApiKey();
         res.json({ apiKey: apiKey || null });
