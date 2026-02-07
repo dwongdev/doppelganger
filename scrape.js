@@ -1,8 +1,7 @@
 const { chromium } = require('playwright');
-const { JSDOM } = require('jsdom');
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
+const { spawn } = require('child_process');
 const { getProxySelection } = require('./proxy-rotation');
 const { selectUserAgent } = require('./user-agent-settings');
 
@@ -73,101 +72,6 @@ const parseBooleanFlag = (value) => {
     if (value === undefined || value === null) return false;
     const normalized = String(value).toLowerCase();
     return normalized === 'true' || normalized === '1';
-};
-
-// Safe Proxy Implementation for Sandbox
-const proxyMap = new WeakMap();
-const targetMap = new WeakMap();
-
-const unwrap = (obj) => {
-    return proxyMap.get(obj) || obj;
-};
-
-const createSafeProxy = (target) => {
-    if (target === null || (typeof target !== 'object' && typeof target !== 'function')) {
-        return target;
-    }
-    if (targetMap.has(target)) {
-        return targetMap.get(target);
-    }
-
-    const proxy = new Proxy(target, {
-        get: (obj, prop) => {
-            if (prop === 'constructor' || prop === '__proto__') {
-                return undefined;
-            }
-            const value = obj[prop];
-            return createSafeProxy(value);
-        },
-        apply: (target, thisArg, args) => {
-            const unproxiedArgs = args.map(arg => {
-                const raw = unwrap(arg);
-                if (typeof raw === 'function') {
-                    // When the Sandbox passes a callback to a Host function, we must wrap it.
-                    // This wrapper will run in the Host context.
-                    return function (...hostArgs) {
-                        // Proxy arguments from Host back to Sandbox
-                        const proxiedCbArgs = hostArgs.map(hostArg => createSafeProxy(hostArg));
-                        const proxiedThis = createSafeProxy(this);
-                        return raw.apply(proxiedThis, proxiedCbArgs);
-                    };
-                }
-                return raw;
-            });
-            const result = target.apply(unwrap(thisArg), unproxiedArgs);
-            return createSafeProxy(result);
-        },
-        construct: (target, args) => {
-            const unproxiedArgs = args.map(arg => {
-                const raw = unwrap(arg);
-                if (typeof raw === 'function') {
-                    return function (...hostArgs) {
-                        const proxiedCbArgs = hostArgs.map(hostArg => createSafeProxy(hostArg));
-                        const proxiedThis = createSafeProxy(this);
-                        return raw.apply(proxiedThis, proxiedCbArgs);
-                    };
-                }
-                return raw;
-            });
-            const result = new target(...unproxiedArgs);
-            return createSafeProxy(result);
-        },
-        has: (target, prop) => {
-            if (prop === 'constructor' || prop === '__proto__') return false;
-            return prop in target;
-        },
-        getOwnPropertyDescriptor: (target, prop) => {
-            if (prop === 'constructor' || prop === '__proto__') {
-                return undefined;
-            }
-            const descriptor = Object.getOwnPropertyDescriptor(target, prop);
-            if (!descriptor) return undefined;
-
-            if (descriptor.configurable === false && 'value' in descriptor && typeof descriptor.value === 'object') {
-                 // Cannot wrap value of non-configurable property due to Proxy invariant.
-                 // We must return the original descriptor or risk breakage/invariant error.
-                 return descriptor;
-            }
-
-            if (descriptor.value) {
-                descriptor.value = createSafeProxy(descriptor.value);
-            }
-            if (descriptor.get) {
-                descriptor.get = createSafeProxy(descriptor.get);
-            }
-            if (descriptor.set) {
-                descriptor.set = createSafeProxy(descriptor.set);
-            }
-            return descriptor;
-        },
-        getPrototypeOf: (target) => {
-            return createSafeProxy(Object.getPrototypeOf(target));
-        }
-    });
-
-    targetMap.set(target, proxy);
-    proxyMap.set(proxy, target);
-    return proxy;
 };
 
 async function handleScrape(req, res) {
@@ -441,97 +345,59 @@ async function handleScrape(req, res) {
 
         const runExtractionScript = async (script, html, pageUrl) => {
             if (!script || typeof script !== 'string') return { result: undefined, logs: [] };
-            try {
-                const dom = new JSDOM(html || '');
-                const { window } = dom;
-                const logBuffer = [];
-                const consoleProxy = {
-                    log: (...args) => logBuffer.push(args.join(' ')),
-                    warn: (...args) => logBuffer.push(args.join(' ')),
-                    error: (...args) => logBuffer.push(args.join(' '))
-                };
-                const shadowHelpers = (() => {
-                    const shadowQueryAll = (selector, root = window.document) => {
-                        const results = [];
-                        const walk = (node) => {
-                            if (!node) return;
-                            if (node.nodeType === 1) {
-                                const el = node;
-                                if (selector && el.matches && el.matches(selector)) results.push(el);
-                                if (el.tagName === 'TEMPLATE' && el.hasAttribute('data-shadowroot')) {
-                                    walk(el.content);
-                                }
-                            } else if (node.nodeType === 11) {
-                                // DocumentFragment
-                            }
-                            if (node.childNodes) {
-                                node.childNodes.forEach((child) => walk(child));
-                            }
-                        };
-                        walk(root);
-                        return results;
-                    };
 
-                    const shadowText = (root = window.document) => {
-                        const texts = [];
-                        const walk = (node) => {
-                            if (!node) return;
-                            if (node.nodeType === 3) {
-                                const text = node.nodeValue ? node.nodeValue.trim() : '';
-                                if (text) texts.push(text);
-                                return;
-                            }
-                            if (node.nodeType === 1) {
-                                const el = node;
-                                if (el.tagName === 'TEMPLATE' && el.hasAttribute('data-shadowroot')) {
-                                    walk(el.content);
-                                }
-                            }
-                            if (node.childNodes) {
-                                node.childNodes.forEach((child) => walk(child));
-                            }
-                        };
-                        walk(root);
-                        return texts;
-                    };
-
-                    return { shadowQueryAll, shadowText };
-                })();
-
-                // Security: Run script in isolated VM context with proxied globals to prevent RCE
-                const sandbox = Object.create(null); // Use null prototype to prevent access to Host Object constructor
-                Object.assign(sandbox, {
-                    $$data: createSafeProxy({
-                        html: () => html || '',
-                        url: () => pageUrl || '',
-                        window,
-                        document: window.document,
-                        shadowQueryAll: includeShadowDom ? shadowHelpers.shadowQueryAll : undefined,
-                        shadowText: includeShadowDom ? shadowHelpers.shadowText : undefined
-                    }),
-                    window: createSafeProxy(window),
-                    document: createSafeProxy(window.document),
-                    DOMParser: createSafeProxy(window.DOMParser),
-                    console: createSafeProxy(consoleProxy)
+            return new Promise((resolve) => {
+                const worker = spawn('node', [path.join(__dirname, 'extraction-worker.js')], {
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                    env: { ...process.env, NODE_ENV: 'production' } // Minimal env
                 });
 
-                const context = vm.createContext(sandbox);
+                let stdout = '';
+                let stderr = '';
 
-                // Wrap script in async IIFE
-                const code = `"use strict"; (async () => { ${script}\n})();`;
+                const workerTimeout = 5000;
+                const timer = setTimeout(() => {
+                    worker.kill();
+                    resolve({ result: 'Worker timed out', logs: [] });
+                }, workerTimeout);
 
-                // Execute in VM using vm.Script to allow timeout
-                const scriptObj = new vm.Script(code);
-                const result = await scriptObj.runInContext(context, { timeout: 1000 });
+                worker.stdout.on('data', (data) => {
+                    stdout += data.toString();
+                });
 
-                // If result is proxied, unwrap it (though unwrap works on proxies created by createSafeProxy,
-                // but the result comes from VM, which might be a primitive or a proxy of a Host object.
-                // If it's a new object created in VM, it is NOT proxied by createSafeProxy (unless we proxied the VM global Object?).
-                // But VM objects are safe to return to Host (they are just objects).
-                return { result, logs: logBuffer };
-            } catch (e) {
-                return { result: `Extraction script error: ${e.message}`, logs: [] };
-            }
+                worker.stderr.on('data', (data) => {
+                    stderr += data.toString();
+                });
+
+                worker.on('close', (code) => {
+                    clearTimeout(timer);
+                    if (code !== 0) {
+                        resolve({ result: `Worker exited with code ${code}: ${stderr}`, logs: [] });
+                        return;
+                    }
+                    try {
+                        const output = JSON.parse(stdout);
+                        resolve(output);
+                    } catch (e) {
+                        resolve({ result: `Worker output parse error: ${e.message}. Stdout: ${stdout}`, logs: [] });
+                    }
+                });
+
+                worker.on('error', (err) => {
+                     clearTimeout(timer);
+                     resolve({ result: `Worker spawn error: ${err.message}`, logs: [] });
+                });
+
+                const input = JSON.stringify({
+                    script,
+                    html,
+                    url: pageUrl,
+                    includeShadowDom
+                });
+
+                worker.stdin.write(input);
+                worker.stdin.end();
+            });
         };
 
         const extraction = await runExtractionScript(extractionScript, productHtml, page.url());
