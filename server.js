@@ -134,6 +134,32 @@ function saveTasks(tasks) {
     fs.writeFileSync(TASKS_FILE, JSON.stringify(tasks, null, 2));
 }
 
+class Mutex {
+    constructor() {
+        this._locked = false;
+        this._queue = [];
+    }
+    lock() {
+        return new Promise((resolve) => {
+            if (this._locked) {
+                this._queue.push(resolve);
+            } else {
+                this._locked = true;
+                resolve();
+            }
+        });
+    }
+    unlock() {
+        if (this._queue.length > 0) {
+            const next = this._queue.shift();
+            next();
+        } else {
+            this._locked = false;
+        }
+    }
+}
+const taskMutex = new Mutex();
+
 function cloneTaskForVersion(task) {
     const copy = JSON.parse(JSON.stringify(task || {}));
     if (copy.versions) delete copy.versions;
@@ -372,6 +398,7 @@ app.use(session({
     cookie: {
         // CodeQL warns about insecure cookies; we only set secure=true when NODE_ENV=production or SESSION_COOKIE_SECURE explicitly enables it.
         secure: SESSION_COOKIE_SECURE,
+        sameSite: 'lax', // Mitigation for CSRF warnings
         maxAge: SESSION_TTL_SECONDS * 1000
     }
 }));
@@ -674,38 +701,53 @@ app.get('/api/tasks/list', requireApiKey, async (req, res) => {
 });
 
 app.post('/api/tasks', requireAuth, async (req, res) => {
-    const tasks = await loadTasks();
-    const newTask = req.body;
-    if (!newTask.id) newTask.id = 'task_' + Date.now();
+    await taskMutex.lock();
+    try {
+        const tasks = await loadTasks();
+        const newTask = req.body;
+        if (!newTask.id) newTask.id = 'task_' + Date.now();
 
-    const index = tasks.findIndex(t => t.id === newTask.id);
-    if (index > -1) {
-        appendTaskVersion(tasks[index]);
-        newTask.versions = tasks[index].versions || [];
-        tasks[index] = newTask;
-    } else {
-        newTask.versions = [];
-        tasks.push(newTask);
+        const index = tasks.findIndex(t => t.id === newTask.id);
+        if (index > -1) {
+            appendTaskVersion(tasks[index]);
+            newTask.versions = tasks[index].versions || [];
+            tasks[index] = newTask;
+        } else {
+            newTask.versions = [];
+            tasks.push(newTask);
+        }
+
+        saveTasks(tasks);
+        res.json(newTask);
+    } finally {
+        taskMutex.unlock();
     }
-
-    saveTasks(tasks);
-    res.json(newTask);
 });
 
 app.post('/api/tasks/:id/touch', requireAuth, async (req, res) => {
-    const tasks = await loadTasks();
-    const index = tasks.findIndex(t => t.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: 'TASK_NOT_FOUND' });
-    tasks[index].last_opened = Date.now();
-    saveTasks(tasks);
-    res.json(tasks[index]);
+    await taskMutex.lock();
+    try {
+        const tasks = await loadTasks();
+        const index = tasks.findIndex(t => t.id === req.params.id);
+        if (index === -1) return res.status(404).json({ error: 'TASK_NOT_FOUND' });
+        tasks[index].last_opened = Date.now();
+        saveTasks(tasks);
+        res.json(tasks[index]);
+    } finally {
+        taskMutex.unlock();
+    }
 });
 
 app.delete('/api/tasks/:id', requireAuth, async (req, res) => {
-    let tasks = await loadTasks();
-    tasks = tasks.filter(t => t.id !== req.params.id);
-    saveTasks(tasks);
-    res.json({ success: true });
+    await taskMutex.lock();
+    try {
+        let tasks = await loadTasks();
+        tasks = tasks.filter(t => t.id !== req.params.id);
+        saveTasks(tasks);
+        res.json({ success: true });
+    } finally {
+        taskMutex.unlock();
+    }
 });
 
 app.get('/api/executions', requireAuth, (req, res) => {
@@ -797,31 +839,41 @@ app.get('/api/tasks/:id/versions/:versionId', requireAuth, async (req, res) => {
 });
 
 app.post('/api/tasks/:id/versions/clear', requireAuth, async (req, res) => {
-    const tasks = await loadTasks();
-    const index = tasks.findIndex(t => t.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: 'TASK_NOT_FOUND' });
-    tasks[index].versions = [];
-    saveTasks(tasks);
-    res.json({ success: true });
+    await taskMutex.lock();
+    try {
+        const tasks = await loadTasks();
+        const index = tasks.findIndex(t => t.id === req.params.id);
+        if (index === -1) return res.status(404).json({ error: 'TASK_NOT_FOUND' });
+        tasks[index].versions = [];
+        saveTasks(tasks);
+        res.json({ success: true });
+    } finally {
+        taskMutex.unlock();
+    }
 });
 
 app.post('/api/tasks/:id/rollback', requireAuth, async (req, res) => {
-    const { versionId } = req.body || {};
-    if (!versionId) return res.status(400).json({ error: 'MISSING_VERSION_ID' });
-    const tasks = await loadTasks();
-    const index = tasks.findIndex(t => t.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: 'TASK_NOT_FOUND' });
-    const task = tasks[index];
-    const versions = task.versions || [];
-    const version = versions.find(v => v.id === versionId);
-    if (!version || !version.snapshot) return res.status(404).json({ error: 'VERSION_NOT_FOUND' });
+    await taskMutex.lock();
+    try {
+        const { versionId } = req.body || {};
+        if (!versionId) return res.status(400).json({ error: 'MISSING_VERSION_ID' });
+        const tasks = await loadTasks();
+        const index = tasks.findIndex(t => t.id === req.params.id);
+        if (index === -1) return res.status(404).json({ error: 'TASK_NOT_FOUND' });
+        const task = tasks[index];
+        const versions = task.versions || [];
+        const version = versions.find(v => v.id === versionId);
+        if (!version || !version.snapshot) return res.status(404).json({ error: 'VERSION_NOT_FOUND' });
 
-    appendTaskVersion(task);
-    const restored = { ...cloneTaskForVersion(version.snapshot), id: task.id, versions: task.versions };
-    restored.last_opened = Date.now();
-    tasks[index] = restored;
-    saveTasks(tasks);
-    res.json(restored);
+        appendTaskVersion(task);
+        const restored = { ...cloneTaskForVersion(version.snapshot), id: task.id, versions: task.versions };
+        restored.last_opened = Date.now();
+        tasks[index] = restored;
+        saveTasks(tasks);
+        res.json(restored);
+    } finally {
+        taskMutex.unlock();
+    }
 });
 
 app.get('/api/data/captures', requireAuth, (_req, res) => {
