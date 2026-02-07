@@ -103,8 +103,11 @@ const createSafeProxy = (target) => {
             const unproxiedArgs = args.map(arg => {
                 const raw = unwrap(arg);
                 if (typeof raw === 'function') {
-                    return function (...cbArgs) {
-                        const proxiedCbArgs = cbArgs.map(cbArg => createSafeProxy(cbArg));
+                    // When the Sandbox passes a callback to a Host function, we must wrap it.
+                    // This wrapper will run in the Host context.
+                    return function (...hostArgs) {
+                        // Proxy arguments from Host back to Sandbox
+                        const proxiedCbArgs = hostArgs.map(hostArg => createSafeProxy(hostArg));
                         const proxiedThis = createSafeProxy(this);
                         return raw.apply(proxiedThis, proxiedCbArgs);
                     };
@@ -118,8 +121,8 @@ const createSafeProxy = (target) => {
             const unproxiedArgs = args.map(arg => {
                 const raw = unwrap(arg);
                 if (typeof raw === 'function') {
-                    return function (...cbArgs) {
-                        const proxiedCbArgs = cbArgs.map(cbArg => createSafeProxy(cbArg));
+                    return function (...hostArgs) {
+                        const proxiedCbArgs = hostArgs.map(hostArg => createSafeProxy(hostArg));
                         const proxiedThis = createSafeProxy(this);
                         return raw.apply(proxiedThis, proxiedCbArgs);
                     };
@@ -517,8 +520,9 @@ async function handleScrape(req, res) {
                 // Wrap script in async IIFE
                 const code = `"use strict"; (async () => { ${script}\n})();`;
 
-                // Execute in VM
-                const result = await vm.runInContext(code, context);
+                // Execute in VM using vm.Script to allow timeout
+                const scriptObj = new vm.Script(code);
+                const result = await scriptObj.runInContext(context, { timeout: 1000 });
 
                 // If result is proxied, unwrap it (though unwrap works on proxies created by createSafeProxy,
                 // but the result comes from VM, which might be a primitive or a proxy of a Host object.
