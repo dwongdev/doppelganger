@@ -106,6 +106,36 @@ const authRateLimiter = rateLimit({
     legacyHeaders: false
 });
 
+const csrfCheck = (req, res, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+        return next();
+    }
+    const origin = req.get('Origin');
+    const referer = req.get('Referer');
+    if (req.session && req.session.user) {
+        const host = req.get('Host');
+        let originHost = null;
+        try {
+            originHost = origin ? new URL(origin).host : null;
+        } catch {
+            // ignore
+        }
+        let refererHost = null;
+        try {
+            refererHost = referer ? new URL(referer).host : null;
+        } catch {
+            // ignore
+        }
+        if (originHost && originHost !== host) {
+            return res.status(403).json({ error: 'CSRF_ORIGIN_MISMATCH' });
+        }
+        if (refererHost && refererHost !== host) {
+            return res.status(403).json({ error: 'CSRF_REFERER_MISMATCH' });
+        }
+    }
+    next();
+};
+
 const sendExecutionUpdate = (runId, payload) => {
     if (!runId) return;
     const clients = executionStreams.get(runId);
@@ -398,10 +428,12 @@ app.use(session({
     cookie: {
         // CodeQL warns about insecure cookies; we only set secure=true when NODE_ENV=production or SESSION_COOKIE_SECURE explicitly enables it.
         secure: SESSION_COOKIE_SECURE,
-        sameSite: 'lax', // Mitigation for CSRF warnings
+        sameSite: 'strict', // Strict mitigation for CSRF warnings
         maxAge: SESSION_TTL_SECONDS * 1000
     }
 }));
+
+app.use(csrfCheck);
 
 // Auth Middleware
 const requireAuth = (req, res, next) => {
