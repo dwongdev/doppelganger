@@ -595,7 +595,7 @@ app.post('/api/settings/api-key', requireAuthForSettings, (req, res) => {
     }
 });
 
-app.get('/api/settings/user-agent', requireAuthForSettings, async (_req, res) => {
+app.get('/api/settings/user-agent', authRateLimiter, requireAuthForSettings, async (_req, res) => {
     try {
         res.json(await getUserAgentConfig());
     } catch (e) {
@@ -604,7 +604,7 @@ app.get('/api/settings/user-agent', requireAuthForSettings, async (_req, res) =>
     }
 });
 
-app.post('/api/settings/user-agent', requireAuthForSettings, async (req, res) => {
+app.post('/api/settings/user-agent', authRateLimiter, requireAuthForSettings, async (req, res) => {
     try {
         const selection = req.body && typeof req.body.selection === 'string' ? req.body.selection : null;
         await setUserAgentSelection(selection);
