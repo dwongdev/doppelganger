@@ -41,7 +41,16 @@ Doppelganger is a self‑hosted, block-first automation control plane built for 
 
 ### Docker Compose (Multi-arch / ARM / Apple Silicon)
 
-The easiest way to run Doppelganger on any architecture (including M1/M2/M3 Macs) is via Docker Compose:
+The easiest way to run Doppelganger on any architecture (including M1/M2/M3 Macs) is via Docker Compose.
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/mnemosyne-artificial-intelligence/doppelganger.git
+cd doppelganger
+```
+
+2. Start the services:
 
 ```bash
 docker compose up --build -d
