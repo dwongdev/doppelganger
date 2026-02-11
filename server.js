@@ -725,15 +725,26 @@ app.post('/api/settings/proxies/rotation', requireAuthForSettings, (req, res) =>
 });
 
 
-app.post('/api/clear-screenshots', requireAuth, (req, res) => {
+app.post('/api/clear-screenshots', requireAuth, async (req, res) => {
     const capturesDir = path.join(__dirname, 'public', 'captures');
-    if (fs.existsSync(capturesDir)) {
-        for (const entry of fs.readdirSync(capturesDir)) {
-            const entryPath = path.join(capturesDir, entry);
-            if (fs.statSync(entryPath).isFile()) {
-                fs.unlinkSync(entryPath);
-            }
+    try {
+        const exists = await fs.promises.access(capturesDir).then(() => true).catch(() => false);
+        if (exists) {
+            const entries = await fs.promises.readdir(capturesDir);
+            await Promise.all(entries.map(async (entry) => {
+                const entryPath = path.join(capturesDir, entry);
+                try {
+                    const stat = await fs.promises.stat(entryPath);
+                    if (stat.isFile()) {
+                        await fs.promises.unlink(entryPath);
+                    }
+                } catch (e) {
+                    // Ignore individual file errors
+                }
+            }));
         }
+    } catch (e) {
+        // Ignore general errors
     }
     res.json({ success: true });
 });
@@ -940,45 +951,69 @@ app.post('/api/tasks/:id/rollback', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/api/data/captures', requireAuth, dataRateLimiter, (_req, res) => {
+app.get('/api/data/captures', requireAuth, dataRateLimiter, async (_req, res) => {
     const capturesDir = path.join(__dirname, 'public', 'captures');
-    if (!fs.existsSync(capturesDir)) return res.json({ captures: [] });
+    try {
+        await fs.promises.access(capturesDir);
+    } catch {
+        return res.json({ captures: [] });
+    }
     const runId = String(_req.query?.runId || '').trim();
-    const entries = fs.readdirSync(capturesDir)
-        .filter(name => /\.(png|jpg|jpeg|webm)$/i.test(name))
-        .filter((name) => !runId || name.includes(runId))
-        .map((name) => {
-            const fullPath = path.join(capturesDir, name);
-            const stat = fs.statSync(fullPath);
-            const lower = name.toLowerCase();
-            const type = lower.endsWith('.webm') ? 'recording' : 'screenshot';
-            return {
-                name,
-                url: `/captures/${name}`,
-                size: stat.size,
-                modified: stat.mtimeMs,
-                type
-            };
-        })
+    const entriesRaw = await fs.promises.readdir(capturesDir);
+    const entries = (await Promise.all(
+        entriesRaw
+            .filter(name => /\.(png|jpg|jpeg|webm)$/i.test(name))
+            .filter((name) => !runId || name.includes(runId))
+            .map(async (name) => {
+                const fullPath = path.join(capturesDir, name);
+                try {
+                    const stat = await fs.promises.stat(fullPath);
+                    const lower = name.toLowerCase();
+                    const type = lower.endsWith('.webm') ? 'recording' : 'screenshot';
+                    return {
+                        name,
+                        url: `/captures/${name}`,
+                        size: stat.size,
+                        modified: stat.mtimeMs,
+                        type
+                    };
+                } catch {
+                    return null;
+                }
+            })
+    ))
+        .filter(Boolean)
         .sort((a, b) => b.modified - a.modified);
     res.json({ captures: entries });
 });
 
-app.get('/api/data/screenshots', requireAuth, dataRateLimiter, (_req, res) => {
+app.get('/api/data/screenshots', requireAuth, dataRateLimiter, async (_req, res) => {
     const capturesDir = path.join(__dirname, 'public', 'captures');
-    if (!fs.existsSync(capturesDir)) return res.json({ screenshots: [] });
-    const entries = fs.readdirSync(capturesDir)
-        .filter(name => /\.(png|jpg|jpeg)$/i.test(name))
-        .map((name) => {
-            const fullPath = path.join(capturesDir, name);
-            const stat = fs.statSync(fullPath);
-            return {
-                name,
-                url: `/captures/${name}`,
-                size: stat.size,
-                modified: stat.mtimeMs
-            };
-        })
+    try {
+        await fs.promises.access(capturesDir);
+    } catch {
+        return res.json({ screenshots: [] });
+    }
+    const entriesRaw = await fs.promises.readdir(capturesDir);
+    const entries = (await Promise.all(
+        entriesRaw
+            .filter(name => /\.(png|jpg|jpeg)$/i.test(name))
+            .map(async (name) => {
+                const fullPath = path.join(capturesDir, name);
+                try {
+                    const stat = await fs.promises.stat(fullPath);
+                    return {
+                        name,
+                        url: `/captures/${name}`,
+                        size: stat.size,
+                        modified: stat.mtimeMs
+                    };
+                } catch {
+                    return null;
+                }
+            })
+    ))
+        .filter(Boolean)
         .sort((a, b) => b.modified - a.modified);
     res.json({ screenshots: entries });
 });
