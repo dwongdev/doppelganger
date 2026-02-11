@@ -48,8 +48,9 @@ RUN npx playwright install --with-deps chromium chrome firefox webkit
 COPY --from=build /app/dist /app/dist
 COPY --from=build /app/public /app/public
 COPY --from=build /app/*.js /app/
+COPY --from=build /app/src /app/src
 COPY --from=build /app/start-vnc.sh /app/start-vnc.sh
-RUN chmod +x /app/start-vnc.sh
+RUN sed -i 's/\r$//' /app/start-vnc.sh && chmod +x /app/start-vnc.sh
 
 EXPOSE 11345 54311
 ENV NODE_ENV=production
