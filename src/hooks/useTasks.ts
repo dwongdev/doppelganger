@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Task } from '../types';
 import { normalizeImportedTask, buildNewTask, parseBooleanFlag, ensureActionIds } from '../utils/taskUtils';
 
@@ -149,6 +149,10 @@ export function useTasks(
             showAlert(`Import failed: ${e.message || 'Unknown error'}`, 'error');
         }
     };
+
+    useEffect(() => {
+        loadTasks();
+    }, []);
 
     return {
         tasks,
