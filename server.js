@@ -1195,12 +1195,52 @@ app.get('/executions/:id', requireAuth, (req, res) => {
 });
 
 // Execution endpoints
+const preprocessScrapeRequest = (req) => {
+    const vars = req.body?.taskVariables || req.body?.variables || req.query?.taskVariables || req.query?.variables || {};
+    let safeVars = vars;
+    if (typeof vars === 'string') {
+        try { safeVars = JSON.parse(vars); } catch { }
+    } else if (typeof vars !== 'object') {
+        safeVars = {};
+    }
+
+    const resolve = (str) => {
+        if (typeof str !== 'string') return str;
+        return str.replace(/\{\$([\w.]+)\}/g, (_match, name) => {
+            if (name === 'now') return new Date().toISOString();
+            const value = safeVars[name];
+            if (value === undefined || value === null) return '';
+            if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                return String(value);
+            }
+            try {
+                return JSON.stringify(value);
+            } catch {
+                return String(value);
+            }
+        });
+    };
+
+    if (req.body) {
+        if (req.body.url) req.body.url = resolve(req.body.url);
+        if (req.body.selector) req.body.selector = resolve(req.body.selector);
+        if (req.body.extractionScript) req.body.extractionScript = resolve(req.body.extractionScript);
+    }
+    if (req.query) {
+        if (req.query.url) req.query.url = resolve(req.query.url);
+        if (req.query.selector) req.query.selector = resolve(req.query.selector);
+        if (req.query.extractionScript) req.query.extractionScript = resolve(req.query.extractionScript);
+    }
+};
+
 app.all('/scrape', requireAuth, dataRateLimiter, (req, res) => {
     registerExecution(req, res, { mode: 'scrape' });
+    preprocessScrapeRequest(req);
     return handleScrape(req, res);
 });
 app.all('/scraper', requireAuth, dataRateLimiter, (req, res) => {
     registerExecution(req, res, { mode: 'scrape' });
+    preprocessScrapeRequest(req);
     return handleScrape(req, res);
 });
 app.all('/agent', requireAuth, dataRateLimiter, (req, res) => {
