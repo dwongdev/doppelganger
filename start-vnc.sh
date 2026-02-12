@@ -4,6 +4,7 @@ set -euo pipefail
 export DISPLAY="${DISPLAY:-:99}"
 
 mkdir -p /app/data
+rm -f /tmp/.X${DISPLAY#*:}-lock 2>/dev/null || true
 
 echo "[vnc] Starting Xvfb on $DISPLAY"
 Xvfb "$DISPLAY" -screen 0 1280x720x24 -nolisten tcp -ac &

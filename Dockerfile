@@ -34,6 +34,7 @@ RUN if [ "$INSTALL_VNC" = "1" ]; then \
     fonts-liberation \
     fonts-noto-color-emoji \
     fonts-freefont-ttf \
+    dbus-x11 \
     && rm -rf /var/lib/apt/lists/*; \
     fi
 

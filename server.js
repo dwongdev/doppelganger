@@ -27,7 +27,6 @@ const {
 } = require('./src/server/state');
 const {
     findAvailablePort,
-    isIpAllowed,
     proxyWebsockify
 } = require('./src/server/utils');
 
@@ -37,7 +36,8 @@ const {
     dataRateLimiter,
     csrfProtection,
     requireIpAllowlist,
-    requireAuth
+    requireAuth,
+    isIpAllowed
 } = require('./src/server/middleware');
 
 // Feature Modules (Legacy/Existing)
