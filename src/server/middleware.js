@@ -19,9 +19,6 @@ const dataRateLimiter = rateLimit({
 });
 
 const csrfProtection = (req, res, next) => {
-    // Mock csrfToken for compatibility with security scanners looking for this pattern
-    req.csrfToken = () => 'protected-by-origin-check';
-
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
         return next();
     }
@@ -30,17 +27,21 @@ const csrfProtection = (req, res, next) => {
     const host = req.get('Host');
 
     let originHost = null;
-    try {
-        originHost = origin ? new URL(origin).host : null;
-    } catch {
-        // ignore
+    if (origin) {
+        try {
+            originHost = new URL(origin).host;
+        } catch {
+            return res.status(403).json({ error: 'CSRF_INVALID_ORIGIN' });
+        }
     }
 
     let refererHost = null;
-    try {
-        refererHost = referer ? new URL(referer).host : null;
-    } catch {
-        // ignore
+    if (referer) {
+        try {
+            refererHost = new URL(referer).host;
+        } catch {
+            return res.status(403).json({ error: 'CSRF_INVALID_REFERER' });
+        }
     }
 
     if (originHost && originHost !== host) {
@@ -51,7 +52,7 @@ const csrfProtection = (req, res, next) => {
     }
 
     if (!origin && !referer) {
-        const isApi = req.get('x-api-key') || req.get('authorization') || req.get('x-internal-run') || req.get('key');
+        const isApi = req.xhr || req.get('x-api-key') || req.get('authorization') || req.get('x-internal-run') || req.get('key');
         if (!isApi) {
             return res.status(403).json({ error: 'CSRF_MISSING_ORIGIN' });
         }
