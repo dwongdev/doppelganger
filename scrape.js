@@ -17,7 +17,7 @@ const STORAGE_STATE_FILE = (() => {
                 return path.join(STORAGE_STATE_PATH, 'storage_state.json');
             }
         }
-    } catch {}
+    } catch { }
     return STORAGE_STATE_PATH;
 })();
 
@@ -66,7 +66,6 @@ async function handleScrape(req, res) {
         // Use 'chrome' channel to use a real installed browser instead of default Chromium
         const launchOptions = {
             headless: true,
-            channel: 'chrome',
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -335,8 +334,8 @@ async function handleScrape(req, res) {
                 });
 
                 worker.on('error', (err) => {
-                     clearTimeout(timer);
-                     resolve({ result: `Worker spawn error: ${err.message}`, logs: [] });
+                    clearTimeout(timer);
+                    resolve({ result: `Worker spawn error: ${err.message}`, logs: [] });
                 });
 
                 const input = JSON.stringify({
@@ -417,7 +416,7 @@ async function handleScrape(req, res) {
         console.error('Scrape Error:', error);
         try {
             if (context) await context.close();
-        } catch {}
+        } catch { }
         if (browser) await browser.close();
         res.status(500).json({ error: 'Failed to scrape', details: error.message });
     }

@@ -7,7 +7,6 @@ async function launchBrowser(options = {}) {
     const { rotateProxies } = options;
     const launchOptions = {
         headless: true,
-        channel: 'chrome',
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -54,10 +53,10 @@ async function createBrowserContext(browser, options = {}) {
     if (!statelessExecution && storageStateFile && fs.existsSync(storageStateFile)) {
         try {
             const stat = fs.statSync(storageStateFile);
-             if (!stat.isDirectory()) {
+            if (!stat.isDirectory()) {
                 contextOptions.storageState = storageStateFile;
-             }
-        } catch {}
+            }
+        } catch { }
     }
 
     if (!disableRecording && recordingsDir) {

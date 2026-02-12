@@ -15,7 +15,7 @@ const STORAGE_STATE_FILE = (() => {
                 return path.join(STORAGE_STATE_PATH, 'storage_state.json');
             }
         }
-    } catch {}
+    } catch { }
     return STORAGE_STATE_PATH;
 })();
 
@@ -25,17 +25,17 @@ const teardownActiveSession = async () => {
     if (!activeSession) return;
     try {
         if (activeSession.interval) clearInterval(activeSession.interval);
-    } catch {}
+    } catch { }
     try {
         if (activeSession.context && !activeSession.stateless) {
             await activeSession.context.storageState({ path: STORAGE_STATE_FILE });
         }
-    } catch {}
+    } catch { }
     try {
         if (activeSession.browser) {
             await activeSession.browser.close();
         }
-    } catch {}
+    } catch { }
     activeSession = null;
 };
 
@@ -67,10 +67,10 @@ async function handleHeadful(req, res) {
     try {
         const launchOptions = {
             headless: false,
-            channel: 'chrome',
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
                 '--window-size=1280,720',
                 '--window-position=80,80'
             ]
@@ -172,7 +172,7 @@ async function handleHeadful(req, res) {
             if (!extraPage || extraPage === page) return;
             try {
                 await extraPage.close();
-            } catch {}
+            } catch { }
         };
 
         context.on('page', closeIfExtra);

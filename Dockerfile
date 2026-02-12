@@ -31,6 +31,9 @@ RUN if [ "$INSTALL_VNC" = "1" ]; then \
     xvfb \
     curl \
     ca-certificates \
+    fonts-liberation \
+    fonts-noto-color-emoji \
+    fonts-freefont-ttf \
     && rm -rf /var/lib/apt/lists/*; \
     fi
 
