@@ -40,25 +40,52 @@ async function saveTasks(tasks) {
 }
 
 // Execution Storage
+let executionsCache = null;
+let executionsLoadPromise = null;
+
 async function loadExecutions() {
-    try {
-        return JSON.parse(await fs.promises.readFile(EXECUTIONS_FILE, 'utf8'));
-    } catch (e) {
-        return [];
+    // Return a shallow copy if cache exists to prevent mutation by callers
+    if (executionsCache) return [...executionsCache];
+
+    // Handle concurrent initial loads
+    if (executionsLoadPromise) {
+        const result = await executionsLoadPromise;
+        return [...result];
     }
+
+    executionsLoadPromise = (async () => {
+        try {
+            const data = await fs.promises.readFile(EXECUTIONS_FILE, 'utf8');
+            executionsCache = JSON.parse(data);
+        } catch (e) {
+            executionsCache = [];
+        }
+        executionsLoadPromise = null;
+        return executionsCache;
+    })();
+
+    const result = await executionsLoadPromise;
+    return [...result];
 }
 
 async function saveExecutions(executions) {
+    // Update cache immediately for read consistency
+    executionsCache = executions;
     await fs.promises.writeFile(EXECUTIONS_FILE, JSON.stringify(executions, null, 2));
 }
 
 async function appendExecution(entry) {
-    const executions = await loadExecutions();
-    executions.unshift(entry);
-    if (executions.length > MAX_EXECUTIONS) {
-        executions.length = MAX_EXECUTIONS;
+    // Ensure cache is loaded, but ignore the return value since it's a copy
+    if (!executionsCache) await loadExecutions();
+
+    // Modify the cache directly to ensure atomic updates for concurrent appends
+    // This prevents the race condition where multiple concurrent appends
+    // would otherwise read the same state and overwrite each other.
+    executionsCache.unshift(entry);
+    if (executionsCache.length > MAX_EXECUTIONS) {
+        executionsCache.length = MAX_EXECUTIONS;
     }
-    await saveExecutions(executions);
+    await saveExecutions(executionsCache);
 }
 
 // API Key Storage
