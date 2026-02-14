@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/mnemosynestack/doppelganger/main/logo.png" alt="Doppelganger Banner">
+  <img src="https://raw.githubusercontent.com/mnemosynestack/doppelganger/main/banner.png" alt="Doppelganger Banner">
 </div>
 
 # Doppelganger — Browser Automation for Everyone
