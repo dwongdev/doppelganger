@@ -216,7 +216,7 @@ export default function App() {
                                 editorView={editorView}
                                 setEditorView={setEditorView}
                                 isExecuting={isExecuting}
-                                onSave={(t: Task | undefined, createVersion?: boolean) => { void saveTask(markTaskAsSaved, location.pathname, t, createVersion); }}
+                                onSave={(t: Task | undefined, createVersion?: boolean) => saveTask(markTaskAsSaved, location.pathname, t, createVersion)}
                                 onRun={() => runTaskWithSnapshot(currentTask, currentTask, setCurrentTask)}
                                 onRunSnapshot={(t) => runTaskWithSnapshot(t || currentTask, currentTask, setCurrentTask)}
                                 results={results}
@@ -242,7 +242,7 @@ export default function App() {
                                 editorView={editorView}
                                 setEditorView={setEditorView}
                                 isExecuting={isExecuting}
-                                onSave={(t: Task | undefined, createVersion?: boolean) => { void saveTask(markTaskAsSaved, location.pathname, t, createVersion); }}
+                                onSave={(t: Task | undefined, createVersion?: boolean) => saveTask(markTaskAsSaved, location.pathname, t, createVersion)}
                                 onRun={() => runTaskWithSnapshot(currentTask, currentTask, setCurrentTask)}
                                 onRunSnapshot={(t) => runTaskWithSnapshot(t || currentTask, currentTask, setCurrentTask)}
                                 results={results}

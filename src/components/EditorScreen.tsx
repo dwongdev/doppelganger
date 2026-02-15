@@ -88,7 +88,7 @@ interface EditorScreenProps {
     editorView: ViewMode;
     setEditorView: (view: ViewMode) => void;
     isExecuting: boolean;
-    onSave: (task?: Task, createVersion?: boolean) => void;
+    onSave: (task?: Task, createVersion?: boolean) => Promise<void>;
     onRun: () => void;
     results: Results | null;
     pinnedResults?: Results | null;
@@ -691,7 +691,10 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             </button>
                             {editorView === 'history' && (
                                 <button
-                                    onClick={() => onSave(currentTask, true)}
+                                    onClick={async () => {
+                                        await onSave(currentTask, true);
+                                        loadVersions();
+                                    }}
                                     className="h-8 px-4 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-white/90 transition-all flex items-center gap-2"
                                 >
                                     <Save size={12} className="text-black" />
