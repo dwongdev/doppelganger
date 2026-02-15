@@ -22,7 +22,8 @@ import {
     AlertTriangle,
     PlayCircle,
     Table,
-    Camera
+    Camera,
+    Save
 } from 'lucide-react';
 import { Task, TaskMode, ViewMode, VarType, Action, Results, ConfirmRequest } from '../types';
 import RichInput from './RichInput';
@@ -688,6 +689,15 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             >
                                 <HistoryIcon className="w-3.5 h-3.5" />
                             </button>
+                            {editorView === 'history' && (
+                                <button
+                                    onClick={() => onSave(currentTask, true)}
+                                    className="h-8 px-4 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-white/90 transition-all flex items-center gap-2"
+                                >
+                                    <Save size={12} className="text-black" />
+                                    <span>Save Version</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 
