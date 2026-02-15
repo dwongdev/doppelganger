@@ -14,7 +14,7 @@ interface EditorLoaderProps {
     editorView: any;
     setEditorView: any;
     isExecuting: boolean;
-    onSave: (task?: Task, createVersion?: boolean) => void;
+    onSave: (task?: Task, createVersion?: boolean) => Promise<void>;
     onRun: () => void;
     onRunSnapshot?: (task: Task) => void;
     results: any;
