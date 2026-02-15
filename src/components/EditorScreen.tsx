@@ -22,8 +22,7 @@ import {
     AlertTriangle,
     PlayCircle,
     Table,
-    Camera,
-    Save
+    Camera
 } from 'lucide-react';
 import { Task, TaskMode, ViewMode, VarType, Action, Results, ConfirmRequest } from '../types';
 import RichInput from './RichInput';
@@ -92,7 +91,6 @@ interface EditorScreenProps {
     onRun: () => void;
     results: Results | null;
     pinnedResults?: Results | null;
-    saveMsg: string;
     onConfirm: (request: string | ConfirmRequest) => Promise<boolean>;
     onNotify: (message: string, tone?: 'success' | 'error') => void;
     onPinResults?: (results: Results) => void;
@@ -174,7 +172,6 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     onRun,
     results,
     pinnedResults,
-    saveMsg,
     onConfirm,
     onNotify,
     onPinResults,
@@ -691,18 +688,6 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             >
                                 <HistoryIcon className="w-3.5 h-3.5" />
                             </button>
-                            <button
-                                onClick={() => onSave(currentTask, true)}
-                                className="h-8 px-4 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-white/90 transition-all flex items-center gap-2"
-                            >
-                                <Save size={12} className="text-black" />
-                                <span>Save Version</span>
-                            </button>
-                            <div
-                                className={`px-4 py-2 text-[9px] font-bold rounded-full uppercase tracking-widest transition-all ${saveMsg === 'SAVED' ? 'text-green-400 border border-green-400/20' : 'text-blue-400 opacity-0'}`}
-                            >
-                                SAVED
-                            </div>
                         </div>
                     </div>
 
