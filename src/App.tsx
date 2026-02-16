@@ -37,7 +37,6 @@ export default function App() {
         tasks,
         currentTask,
         setCurrentTask,
-        saveMsg,
         loadTasks,
         touchTask,
         createNewTask,
@@ -217,12 +216,11 @@ export default function App() {
                                 editorView={editorView}
                                 setEditorView={setEditorView}
                                 isExecuting={isExecuting}
-                                onSave={(t: Task | undefined) => { void saveTask(markTaskAsSaved, location.pathname, t); }}
+                                onSave={(t: Task | undefined, createVersion?: boolean) => saveTask(markTaskAsSaved, location.pathname, t, createVersion)}
                                 onRun={() => runTaskWithSnapshot(currentTask, currentTask, setCurrentTask)}
                                 onRunSnapshot={(t) => runTaskWithSnapshot(t || currentTask, currentTask, setCurrentTask)}
                                 results={results}
                                 pinnedResults={pinnedResults}
-                                saveMsg={saveMsg}
                                 onConfirm={requestConfirm}
                                 onNotify={showAlert}
                                 onPinResults={pinResults}
@@ -244,12 +242,11 @@ export default function App() {
                                 editorView={editorView}
                                 setEditorView={setEditorView}
                                 isExecuting={isExecuting}
-                                onSave={(t: Task | undefined) => { void saveTask(markTaskAsSaved, location.pathname, t); }}
+                                onSave={(t: Task | undefined, createVersion?: boolean) => saveTask(markTaskAsSaved, location.pathname, t, createVersion)}
                                 onRun={() => runTaskWithSnapshot(currentTask, currentTask, setCurrentTask)}
                                 onRunSnapshot={(t) => runTaskWithSnapshot(t || currentTask, currentTask, setCurrentTask)}
                                 results={results}
                                 pinnedResults={pinnedResults}
-                                saveMsg={saveMsg}
                                 onConfirm={requestConfirm}
                                 onNotify={showAlert}
                                 onPinResults={pinResults}

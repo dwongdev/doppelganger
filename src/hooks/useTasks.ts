@@ -9,7 +9,6 @@ export function useTasks(
 ) {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [currentTask, setCurrentTask] = useState<Task | null>(null);
-    const [saveMsg, setSaveMsg] = useState('');
 
     const loadTasks = useCallback(async () => {
         try {
@@ -91,12 +90,6 @@ export function useTasks(
         });
         const saved = await res.json();
         setCurrentTask(saved);
-        if (createVersion) {
-            setSaveMsg("VERSION SAVED");
-        } else {
-            setSaveMsg("SAVED");
-        }
-        setTimeout(() => setSaveMsg(''), 2000);
         markTaskAsSaved(saved);
         loadTasks();
         if (currentPath.includes('new')) {
@@ -165,8 +158,6 @@ export function useTasks(
         setTasks,
         currentTask,
         setCurrentTask,
-        saveMsg,
-        setSaveMsg,
         loadTasks,
         touchTask,
         createNewTask,

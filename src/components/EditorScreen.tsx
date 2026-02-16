@@ -88,11 +88,10 @@ interface EditorScreenProps {
     editorView: ViewMode;
     setEditorView: (view: ViewMode) => void;
     isExecuting: boolean;
-    onSave: (task?: Task, createVersion?: boolean) => void;
+    onSave: (task?: Task, createVersion?: boolean) => Promise<void>;
     onRun: () => void;
     results: Results | null;
     pinnedResults?: Results | null;
-    saveMsg: string;
     onConfirm: (request: string | ConfirmRequest) => Promise<boolean>;
     onNotify: (message: string, tone?: 'success' | 'error') => void;
     onPinResults?: (results: Results) => void;
@@ -123,11 +122,14 @@ const VariableRow: React.FC<{
                 onBlur={() => {
                     if (localName !== name) updateVariable(name, localName, def.type, def.value);
                 }}
+                placeholder="Variable name"
+                aria-label="Variable name"
                 className="var-name flex-1 bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white"
             />
             <select
                 value={def.type}
                 onChange={(e) => updateVariable(name, name, e.target.value as VarType, def.value)}
+                aria-label="Variable type"
                 className="custom-select var-type bg-white/[0.05] border border-white/10 rounded-xl px-2 py-2 text-[8px] font-bold uppercase text-white/40"
             >
                 <option value="string">STR</option>
@@ -139,6 +141,7 @@ const VariableRow: React.FC<{
                     <select
                         value={String(def.value)}
                         onChange={(e) => updateVariable(name, name, def.type, e.target.value)}
+                        aria-label="Variable value"
                         className="custom-select w-full bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white"
                     >
                         <option value="true">True</option>
@@ -149,6 +152,7 @@ const VariableRow: React.FC<{
                         type={def.type === 'number' ? 'number' : 'text'}
                         value={def.value}
                         onChange={(e) => updateVariable(name, name, def.type, e.target.value)}
+                        aria-label="Variable value"
                         className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white"
                     />
                 )}
@@ -174,7 +178,6 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     onRun,
     results,
     pinnedResults,
-    saveMsg,
     onConfirm,
     onNotify,
     onPinResults,
@@ -680,6 +683,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             onChange={(e) => setCurrentTask({ ...currentTask, name: e.target.value })}
                             onBlur={() => handleAutoSave()}
                             placeholder="Task Name..."
+                            aria-label="Task Name"
                             className="bg-transparent text-xl font-bold tracking-tight text-white focus:outline-none border-none p-0 w-full placeholder:text-white/10"
                         />
                         <div className="flex items-center gap-4">
@@ -691,18 +695,18 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             >
                                 <HistoryIcon className="w-3.5 h-3.5" />
                             </button>
-                            <button
-                                onClick={() => onSave(currentTask, true)}
-                                className="h-8 px-4 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-white/90 transition-all flex items-center gap-2"
-                            >
-                                <Save size={12} className="text-black" />
-                                <span>Save Version</span>
-                            </button>
-                            <div
-                                className={`px-4 py-2 text-[9px] font-bold rounded-full uppercase tracking-widest transition-all ${saveMsg === 'SAVED' ? 'text-green-400 border border-green-400/20' : 'text-blue-400 opacity-0'}`}
-                            >
-                                SAVED
-                            </div>
+                            {editorView === 'history' && (
+                                <button
+                                    onClick={async () => {
+                                        await onSave(currentTask, true);
+                                        loadVersions();
+                                    }}
+                                    className="h-8 px-4 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-white/90 transition-all flex items-center gap-2"
+                                >
+                                    <Save size={12} className="text-black" />
+                                    <span>Save Version</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 
