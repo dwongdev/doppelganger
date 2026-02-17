@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { Action } from '../../types';
 import { ACTION_CATALOG } from './actionCatalog';
 
@@ -13,6 +13,7 @@ interface ActionPaletteProps {
 
 const ActionPalette: React.FC<ActionPaletteProps> = ({ open, query, onQueryChange, onClose, onSelect }) => {
     const inputRef = useRef<HTMLInputElement | null>(null);
+    const [activeIndex, setActiveIndex] = useState(0);
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -21,6 +22,32 @@ const ActionPalette: React.FC<ActionPaletteProps> = ({ open, query, onQueryChang
             item.label.toLowerCase().includes(q) || item.description.toLowerCase().includes(q)
         );
     }, [query]);
+
+    useEffect(() => {
+        setActiveIndex(0);
+    }, [query]);
+
+    useEffect(() => {
+        document.getElementById(`action-option-${activeIndex}`)?.scrollIntoView({ block: 'nearest' });
+    }, [activeIndex]);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setActiveIndex((prev) => Math.min(prev + 1, filtered.length - 1));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setActiveIndex((prev) => Math.max(prev - 1, 0));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (filtered[activeIndex]) {
+                onSelect(filtered[activeIndex].type);
+            }
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            onClose();
+        }
+    };
 
     if (!open) return null;
 
@@ -53,15 +80,32 @@ const ActionPalette: React.FC<ActionPaletteProps> = ({ open, query, onQueryChang
                     }}
                     value={query}
                     onChange={(e) => onQueryChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     placeholder="Type to filter (e.g., if, click, loop)"
                     className="w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-white/30"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-controls="action-listbox"
+                    aria-expanded={true}
+                    aria-activedescendant={`action-option-${activeIndex}`}
                 />
-                <div className="mt-4 max-h-[320px] overflow-y-auto custom-scrollbar space-y-2">
-                    {filtered.map((item) => (
+                <div
+                    id="action-listbox"
+                    role="listbox"
+                    className="mt-4 max-h-[320px] overflow-y-auto custom-scrollbar space-y-2"
+                >
+                    {filtered.map((item, index) => (
                         <button
                             key={item.type}
+                            id={`action-option-${index}`}
+                            role="option"
+                            aria-selected={index === activeIndex}
                             onClick={() => onSelect(item.type)}
-                            className="w-full text-left px-4 py-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.06] transition-all"
+                            className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                                index === activeIndex
+                                    ? 'bg-white/10 border-white/30 ring-1 ring-white/20'
+                                    : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.06]'
+                            }`}
                         >
                             <div className="text-[10px] font-bold uppercase tracking-widest text-white">{item.label}</div>
                             <div className="text-[9px] text-gray-500 mt-1">{item.description}</div>
