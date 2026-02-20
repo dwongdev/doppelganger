@@ -42,6 +42,16 @@ async function saveTasks(tasks) {
 // Execution Storage
 let executionsCache = null;
 let executionsLoadPromise = null;
+let executionsSaveTimer = null;
+let executionsWritePromise = Promise.resolve();
+
+async function performExecutionsWrite(data) {
+    // Chain the write operation to ensure sequential execution preventing race conditions
+    const nextWrite = executionsWritePromise.then(() => fs.promises.writeFile(EXECUTIONS_FILE, data));
+    // Update the promise reference, handling potential rejections to keep the chain alive
+    executionsWritePromise = nextWrite.catch(() => {});
+    return nextWrite;
+}
 
 async function loadExecutions() {
     // Return a shallow copy if cache exists to prevent mutation by callers
@@ -69,9 +79,15 @@ async function loadExecutions() {
 }
 
 async function saveExecutions(executions) {
+    // Cancel any pending debounced save to avoid overwriting this immediate save
+    if (executionsSaveTimer) {
+        clearTimeout(executionsSaveTimer);
+        executionsSaveTimer = null;
+    }
     // Update cache immediately for read consistency
     executionsCache = executions;
-    await fs.promises.writeFile(EXECUTIONS_FILE, JSON.stringify(executions, null, 2));
+    const data = JSON.stringify(executions, null, 2);
+    await performExecutionsWrite(data);
 }
 
 async function appendExecution(entry) {
@@ -85,7 +101,20 @@ async function appendExecution(entry) {
     if (executionsCache.length > MAX_EXECUTIONS) {
         executionsCache.length = MAX_EXECUTIONS;
     }
-    await saveExecutions(executionsCache);
+
+    // Debounce save (1000ms delay)
+    if (executionsSaveTimer) clearTimeout(executionsSaveTimer);
+
+    executionsSaveTimer = setTimeout(async () => {
+        executionsSaveTimer = null;
+        try {
+            // We use the internal cache which is the source of truth
+            const data = JSON.stringify(executionsCache, null, 2);
+            await performExecutionsWrite(data);
+        } catch (err) {
+            console.error('[STORAGE] Failed to save executions (debounced):', err);
+        }
+    }, 1000);
 }
 
 // API Key Storage
