@@ -5,3 +5,7 @@
 ## 2026-02-13 - Context-Dependent Input Accessibility
 **Learning:** Edit modes that replace text with inputs often drop context (labels/placeholders), relying on the user's memory of the original text's meaning.
 **Action:** Always ensure inputs in edit modes retain the context via placeholders and aria-labels, mirroring the read-only state's semantics.
+
+## 2025-05-20 - Loading State Feedback
+**Learning:** Async buttons (like Auth submit) often rely on text changes ("Authenticating...") which can be missed. A visual spinner provides immediate, universal feedback.
+**Action:** When adding async actions, always pair the disabled state with a visual indicator (spinner) inside the button.
