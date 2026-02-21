@@ -99,8 +99,11 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ status, onSubmit, error, busy =
                         type="submit"
                         disabled={busy}
                         aria-busy={busy}
-                        className="shine-effect w-full bg-white text-black py-4 rounded-2xl font-bold text-[10px] tracking-[0.3em] uppercase hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-default"
+                        className="shine-effect w-full bg-white text-black py-4 rounded-2xl font-bold text-[10px] tracking-[0.3em] uppercase hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-default flex items-center justify-center gap-3"
                     >
+                        {busy && (
+                            <div className="w-4 h-4 border-2 border-black/10 border-t-black rounded-full animate-spin" />
+                        )}
                         {buttonLabel}
                     </button>
 
