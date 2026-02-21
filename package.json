@@ -12,7 +12,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "postinstall": "node scripts/postinstall.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/test_functionality.js && node tests/ip-normalization.test.js && npx -y vite-node tests/clipboard.test.ts"
   },
   "files": [
     "bin/cli.js",
