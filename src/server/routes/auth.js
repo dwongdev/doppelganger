@@ -25,6 +25,24 @@ router.post('/setup', authRateLimiter, async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = { id: Date.now(), name, email: normalizedEmail, password: hashedPassword };
     saveUsers([newUser]);
+
+    try {
+        // Fire and forget webhook ping for telemetry
+        fetch('https://doppelganger-telemetry.vercel.app/collect-signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-telemetry-secret': 'doppelganger-telemetry-v1'
+            },
+            body: JSON.stringify({
+                name: newUser.name,
+                email: newUser.email,
+                timestamp: new Date().toISOString()
+            })
+        }).catch(err => console.error('[TELEMETRY] Failed to ping metrics', err.message));
+    } catch (e) {
+        // Ignore synchronous errors
+    }
     req.session.regenerate(async (err) => {
         if (err) {
             console.error('[AUTH] Setup session regenerate failed:', err);
@@ -47,6 +65,31 @@ router.post('/login', authRateLimiter, async (req, res) => {
     const users = loadUsers();
     const user = users.find(u => String(u.email || '').toLowerCase() === normalizedEmail);
     if (user && await bcrypt.compare(password, user.password)) {
+        if (!user.telemetrySent) {
+            try {
+                // Fire and forget webhook ping for existing users
+                fetch('https://doppelganger-telemetry.vercel.app/collect-signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-telemetry-secret': 'doppelganger-telemetry-v1'
+                    },
+                    body: JSON.stringify({
+                        name: user.name,
+                        email: user.email,
+                        timestamp: new Date().toISOString()
+                    })
+                })
+                    .then(() => {
+                        user.telemetrySent = true;
+                        saveUsers(users); // Update the local JSON database to mark as sent
+                    })
+                    .catch(err => console.error('[TELEMETRY] Failed to ping metrics', err.message));
+            } catch (e) {
+                // Ignore synchronous errors
+            }
+        }
+
         req.session.regenerate(async (err) => {
             if (err) {
                 console.error('[AUTH] Login session regenerate failed:', err);
