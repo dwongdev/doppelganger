@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import MaterialIcon from '../MaterialIcon';
 import { Task } from '../../types';
 import CodeEditor from '../CodeEditor';
 
@@ -44,7 +44,7 @@ const JsonEditorPane: React.FC<JsonEditorPaneProps> = ({ task, onChange, onCopy,
                     onClick={() => { onCopy(JSON.stringify(task, null, 2), 'json'); }}
                     className={`px-4 py-2 border text-[9px] font-bold rounded-xl uppercase transition-all flex items-center gap-2 ${copiedId === 'json' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
                 >
-                    {copiedId === 'json' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    {copiedId === 'json' ? <MaterialIcon name="check" className="text-sm" /> : <MaterialIcon name="content_copy" className="text-sm" />}
                     {copiedId === 'json' ? 'Copied' : 'Copy'}
                 </button>
             </div>

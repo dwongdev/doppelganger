@@ -1,6 +1,7 @@
 import React, { useRef, memo } from 'react';
-import { X, Globe, Download, Upload, Rocket } from 'lucide-react';
 import { Task } from '../types';
+import MaterialIcon from './MaterialIcon';
+import GithubStarPill from './GithubStarPill';
 
 interface DashboardScreenProps {
     tasks: Task[];
@@ -44,18 +45,19 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ tasks, onNewTask, onE
                         <h2 className="text-4xl font-bold tracking-tighter text-white">Dashboard</h2>
                     </div>
                     <div className="flex items-center gap-3">
+                        <GithubStarPill />
                         <button
                             onClick={onExportTasks}
                             className="px-4 py-3 rounded-2xl border border-white/10 text-white text-[9px] font-bold uppercase tracking-[0.3em] hover:bg-white/5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                         >
-                            <Download className="w-4 h-4 inline-block mr-2" />
+                            <MaterialIcon name="download" className="w-4 h-4 inline-block mr-2 text-[16px] align-sub" />
                             Export
                         </button>
                         <button
                             onClick={handleImportClick}
                             className="px-4 py-3 rounded-2xl border border-white/10 text-white text-[9px] font-bold uppercase tracking-[0.3em] hover:bg-white/5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                         >
-                            <Upload className="w-4 h-4 inline-block mr-2" />
+                            <MaterialIcon name="upload" className="w-4 h-4 inline-block mr-2 text-[16px] align-sub" />
                             Import
                         </button>
                         <button
@@ -93,7 +95,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ tasks, onNewTask, onE
                                                     }}
                                                 />
                                             ) : (
-                                                <Globe className="w-5 h-5 text-gray-500" />
+                                                <MaterialIcon name="public" className="text-gray-500 text-xl" />
                                             )}
                                         </div>
                                         <div className="px-3 py-1 rounded-full bg-white/5 text-[7px] font-bold uppercase tracking-widest text-gray-500">{task.mode}</div>
@@ -115,7 +117,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ tasks, onNewTask, onE
                                             aria-label="Delete task"
                                             title="Delete task"
                                         >
-                                            <X className="w-4 h-4" />
+                                            <MaterialIcon name="close" className="text-base" />
                                         </button>
                                     </div>
                                 </div>
@@ -127,7 +129,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ tasks, onNewTask, onE
                 {tasks.length === 0 && (
                     <div className="flex-1 flex flex-col items-center justify-center space-y-6">
                         <div className="w-24 h-24 border-2 border-dashed border-white/20 rounded-[40px] flex items-center justify-center text-3xl bg-white/5">
-                            <Rocket className="w-10 h-10 text-white/50" />
+                            <MaterialIcon name="rocket_launch" className="text-white/50 text-4xl" />
                         </div>
                         <div className="text-center space-y-2">
                             <p className="text-sm font-bold uppercase tracking-widest text-white/70">No Tasks Found</p>

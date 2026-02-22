@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, Save, Eye, EyeOff } from 'lucide-react';
+import MaterialIcon from '../MaterialIcon';
 
 interface AgentAiPanelProps {
     apiKey: string | null;
@@ -39,7 +39,7 @@ const AgentAiPanel: React.FC<AgentAiPanelProps> = ({ apiKey, model, enabled, loa
     return (
         <div className="glass-card p-8 rounded-[40px] space-y-6">
             <div className="flex items-center gap-4 mb-2">
-                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400"><Bot className="w-5 h-5" /></div>
+                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400"><MaterialIcon name="smart_toy" className="text-xl" /></div>
                 <div>
                     <h3 className="text-sm font-bold text-white uppercase tracking-widest">Agent AI</h3>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Bring your own OpenAI key</p>
@@ -64,7 +64,7 @@ const AgentAiPanel: React.FC<AgentAiPanelProps> = ({ apiKey, model, enabled, loa
                         aria-label={visible ? 'Hide key' : 'Show key'}
                         type="button"
                     >
-                        {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {visible ? <MaterialIcon name="visibility_off" className="text-base" /> : <MaterialIcon name="visibility" className="text-base" />}
                     </button>
                 </div>
                 <label className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">Model</label>
@@ -90,7 +90,7 @@ const AgentAiPanel: React.FC<AgentAiPanelProps> = ({ apiKey, model, enabled, loa
                         disabled={saving || loading}
                         className="flex-1 px-6 py-3 rounded-2xl text-[9px] font-bold uppercase tracking-widest bg-white text-black hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 inline-flex items-center justify-center gap-2"
                     >
-                        <Save className="w-4 h-4" />
+                        <MaterialIcon name="save" className="text-base" />
                         Save AI Settings
                     </button>
                 </div>

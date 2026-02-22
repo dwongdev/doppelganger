@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, type NavigateFunction } from 'react-router-dom';
-import { RefreshCw, Trash2, Monitor, Cloud } from 'lucide-react';
+import MaterialIcon from './MaterialIcon';
 import { Execution, ConfirmRequest } from '../types';
 import { FixedSizeList, ListChildComponentProps } from 'react-window';
 
@@ -32,7 +32,7 @@ const renderExecutionRow = ({ index, style, data }: ListChildComponentProps<Exec
             className="glass-card w-full rounded-2xl p-5 flex items-center gap-4 text-left hover:bg-white/[0.06] transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
         >
             <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400">
-                {exec.source === 'api' ? <Cloud className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                {exec.source === 'api' ? <MaterialIcon name="cloud" className="text-xl" /> : <MaterialIcon name="monitor" className="text-xl" />}
             </div>
             <div className="flex-1 min-w-0 space-y-1">
                 <div className="text-[10px] font-bold text-white uppercase tracking-widest truncate">
@@ -155,7 +155,7 @@ const ExecutionsScreen: React.FC<ExecutionsScreenProps> = ({ onConfirm, onNotify
                             title="Refresh"
                             aria-label="Refresh executions"
                         >
-                            <RefreshCw className="w-4 h-4" />
+                            <MaterialIcon name="sync" className="text-xl" />
                         </button>
                         <button
                             onClick={clearExecutions}
@@ -163,7 +163,7 @@ const ExecutionsScreen: React.FC<ExecutionsScreenProps> = ({ onConfirm, onNotify
                             title="Clear all"
                             aria-label="Clear all executions"
                         >
-                            <Trash2 className="w-4 h-4" />
+                            <MaterialIcon name="delete" className="text-xl" />
                         </button>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
-import { X } from 'lucide-react';
 import { useMemo, useRef } from 'react';
+import MaterialIcon from '../MaterialIcon';
 import { Action } from '../../types';
 import { ACTION_CATALOG } from './actionCatalog';
 
@@ -43,7 +43,7 @@ const ActionPalette: React.FC<ActionPaletteProps> = ({ open, query, onQueryChang
                         className="p-2 rounded-xl border border-white/10 text-white/70 hover:text-white hover:bg-white/5 transition-all"
                         aria-label="Close"
                     >
-                        <X className="w-4 h-4" />
+                        <MaterialIcon name="close" className="text-base" />
                     </button>
                 </div>
                 <input

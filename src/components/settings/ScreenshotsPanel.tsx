@@ -1,4 +1,4 @@
-import { Image as ImageIcon } from 'lucide-react';
+import MaterialIcon from '../MaterialIcon';
 
 interface ScreenshotEntry {
     name: string;
@@ -19,7 +19,7 @@ const ScreenshotsPanel: React.FC<ScreenshotsPanelProps> = ({ screenshots, loadin
         <div className="glass-card p-8 rounded-[40px] space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400"><ImageIcon className="w-5 h-5" /></div>
+                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400"><MaterialIcon name="image" className="text-xl" /></div>
                     <div>
                         <h3 className="text-sm font-bold text-white uppercase tracking-widest">Screenshots</h3>
                         <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Stored captures</p>

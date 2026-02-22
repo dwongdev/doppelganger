@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import GithubStarPill from './GithubStarPill';
 import { ConfirmRequest } from '../types';
 import ApiKeyPanel from './settings/ApiKeyPanel';
 import StoragePanel from './settings/StoragePanel';
@@ -545,6 +546,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                         onRotationModeChange={updateRotationMode}
                     />
                 )}
+
+                <div className="pt-8 flex justify-center border-t border-white/5 mt-8">
+                    <GithubStarPill />
+                </div>
             </div>
         </main>
     );

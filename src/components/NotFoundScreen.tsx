@@ -1,4 +1,4 @@
-import { MoveLeft } from 'lucide-react';
+import MaterialIcon from './MaterialIcon';
 
 interface NotFoundScreenProps {
     title?: string;
@@ -22,7 +22,7 @@ const NotFoundScreen: React.FC<NotFoundScreenProps> = ({
                         onClick={onBack}
                         className="mt-2 inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-black text-[9px] font-bold uppercase tracking-[0.3em] hover:scale-105 transition-all"
                     >
-                        <MoveLeft className="w-4 h-4" />
+                        <MaterialIcon name="arrow_back" className="text-base" />
                         Back
                     </button>
                 )}

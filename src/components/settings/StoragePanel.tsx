@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import MaterialIcon from '../MaterialIcon';
 
 interface StoragePanelProps {
     onClearStorage: (type: 'screenshots' | 'cookies') => void;
@@ -8,7 +8,7 @@ const StoragePanel: React.FC<StoragePanelProps> = ({ onClearStorage }) => {
     return (
         <div className="glass-card p-8 rounded-[40px] space-y-6">
             <div className="flex items-center gap-4 mb-2">
-                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400"><Trash2 className="w-5 h-5" /></div>
+                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400"><MaterialIcon name="delete" className="text-xl" /></div>
                 <div>
                     <h3 className="text-sm font-bold text-white uppercase tracking-widest">Storage</h3>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Manage stored data</p>

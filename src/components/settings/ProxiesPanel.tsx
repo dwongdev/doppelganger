@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ShieldCheck, Trash2, Star, StarOff, RefreshCw } from 'lucide-react';
+import MaterialIcon from '../MaterialIcon';
 
 interface ProxyEntry {
     id: string;
@@ -145,7 +145,7 @@ const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
         <div className="glass-card p-8 rounded-[40px] space-y-6">
             <div className="flex items-center gap-4 mb-2">
                 <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400">
-                    <ShieldCheck className="w-5 h-5" />
+                    <MaterialIcon name="security" className="text-xl" />
                 </div>
                 <div>
                     <h3 className="text-sm font-bold text-white uppercase tracking-widest">Proxies</h3>
@@ -157,7 +157,7 @@ const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
                         disabled={loading}
                         className="px-4 py-2 rounded-xl border border-white/10 text-[9px] font-bold uppercase tracking-widest text-white hover:bg-white/5 transition-all disabled:opacity-50 inline-flex items-center gap-2"
                     >
-                        <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                        <MaterialIcon name="sync" className={`text-base ${loading ? 'animate-spin' : ''}`} />
                         Refresh
                     </button>
                 </div>
@@ -315,9 +315,9 @@ const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
                             ) : (
                                 <>
                                     <div className="space-y-1">
-                                    <div className="text-[10px] font-bold text-white uppercase tracking-widest">
-                                        {proxy.label || proxy.server}
-                                    </div>
+                                        <div className="text-[10px] font-bold text-white uppercase tracking-widest">
+                                            {proxy.label || proxy.server}
+                                        </div>
                                         <div className="text-[9px] text-gray-500 uppercase tracking-widest">
                                             {proxy.server}
                                         </div>
@@ -327,7 +327,7 @@ const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
                                             onClick={() => onSetDefault(proxy.id)}
                                             className={`px-3 py-2 rounded-xl border text-[9px] font-bold uppercase tracking-widest transition-all inline-flex items-center gap-2 ${isDefault ? 'bg-white text-black border-white' : 'border-white/10 text-white hover:bg-white/5'}`}
                                         >
-                                            {isDefault ? <Star className="w-3 h-3" /> : <StarOff className="w-3 h-3" />}
+                                            {isDefault ? <MaterialIcon name="star" className="text-base" /> : <MaterialIcon name="star_outline" className="text-base" />}
                                             {isDefault ? 'Default' : 'Set Default'}
                                         </button>
                                         {proxy.id !== 'host' && (
@@ -342,7 +342,7 @@ const ProxiesPanel: React.FC<ProxiesPanelProps> = ({
                                                     onClick={() => onDelete(proxy.id)}
                                                     className="px-3 py-2 rounded-xl border border-red-500/20 text-[9px] font-bold uppercase tracking-widest text-red-300 hover:bg-red-500/10 transition-all inline-flex items-center gap-2"
                                                 >
-                                                    <Trash2 className="w-3 h-3" />
+                                                    <MaterialIcon name="delete" className="text-base" />
                                                     Delete
                                                 </button>
                                             </>

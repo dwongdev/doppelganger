@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Database, Eye, EyeOff } from 'lucide-react';
+import MaterialIcon from '../MaterialIcon';
 
 interface ApiKeyPanelProps {
     apiKey: string | null;
@@ -15,7 +15,7 @@ const ApiKeyPanel: React.FC<ApiKeyPanelProps> = ({ apiKey, loading, saving, onRe
     return (
         <div className="glass-card p-8 rounded-[40px] space-y-6">
             <div className="flex items-center gap-4 mb-2">
-                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400"><Database className="w-5 h-5" /></div>
+                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400"><MaterialIcon name="database" className="text-xl" /></div>
                 <div>
                     <h3 className="text-sm font-bold text-white uppercase tracking-widest">API Key</h3>
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Manage task API access</p>
@@ -37,7 +37,7 @@ const ApiKeyPanel: React.FC<ApiKeyPanelProps> = ({ apiKey, loading, saving, onRe
                         title={visible ? 'Hide key' : 'Show key'}
                         aria-label={visible ? 'Hide key' : 'Show key'}
                     >
-                        {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {visible ? <MaterialIcon name="visibility_off" className="text-base" /> : <MaterialIcon name="visibility" className="text-base" />}
                     </button>
                 </div>
                 <div className="flex gap-3">
@@ -57,7 +57,7 @@ const ApiKeyPanel: React.FC<ApiKeyPanelProps> = ({ apiKey, loading, saving, onRe
                         disabled={!apiKey}
                         className="flex-1 px-6 py-3 rounded-2xl text-[9px] font-bold uppercase tracking-widest border border-white/10 text-white hover:bg-white/5 transition-all disabled:opacity-50 inline-flex items-center justify-center gap-2"
                     >
-                        <Copy className="w-4 h-4" />
+                        <MaterialIcon name="content_copy" className="text-base" />
                         Copy Key
                     </button>
                 </div>

@@ -1,31 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-    Play,
-    Copy,
-    X,
-    Check,
-    History as HistoryIcon,
-    MousePointer2,
-    Type as TypeIcon,
-    Target,
-    Keyboard,
-    Clock,
-    ArrowDownUp,
-    Code,
-    Split,
-    CornerRightDown,
-    Repeat,
-    List,
-    Variable,
-    Layers,
-    Square,
-    AlertTriangle,
-    PlayCircle,
-    Table,
-    Camera,
-    Save,
-    Navigation
-} from 'lucide-react';
+import MaterialIcon from './MaterialIcon';
 import { Task, TaskMode, ViewMode, VarType, Action, Results, ConfirmRequest } from '../types';
 import RichInput from './RichInput';
 import CodeEditor from './CodeEditor';
@@ -694,7 +668,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                 title="Task History"
                                 aria-label="Task History"
                             >
-                                <HistoryIcon className="w-3.5 h-3.5" />
+                                <MaterialIcon name="history" className="text-sm" />
                             </button>
                             {editorView === 'history' && (
                                 <button
@@ -704,7 +678,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                     }}
                                     className="h-8 px-4 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-white/90 transition-all flex items-center gap-2"
                                 >
-                                    <Save size={12} className="text-black" />
+                                    <MaterialIcon name="save" className="text-[12px] text-black" />
                                     <span>Save Version</span>
                                 </button>
                             )}
@@ -803,27 +777,27 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                                 ? 'border-gray-500/40'
                                                                 : '';
                                                 const renderBlockMarker = (type: Action['type']) => {
-                                                    const iconClass = "w-3 h-3";
-                                                    if (type === 'if' || type === 'else') return <Split className={`${iconClass} text-blue-400`} />;
-                                                    if (type === 'end') return <CornerRightDown className={`${iconClass} text-gray-500`} />;
-                                                    if (type === 'while' || type === 'repeat') return <Repeat className={`${iconClass} text-amber-400`} />;
-                                                    if (type === 'foreach') return <List className={`${iconClass} text-amber-300`} />;
-                                                    if (type === 'on_error') return <AlertTriangle className={`${iconClass} text-red-400`} />;
-                                                    if (type === 'set') return <Variable className={`${iconClass} text-green-400`} />;
-                                                    if (type === 'stop') return <Square className={`${iconClass} text-red-400`} />;
-                                                    if (type === 'click') return <MousePointer2 className={`${iconClass} text-blue-300`} />;
-                                                    if (type === 'type') return <TypeIcon className={`${iconClass} text-green-300`} />;
-                                                    if (type === 'hover') return <Target className={`${iconClass} text-purple-300`} />;
-                                                    if (type === 'press') return <Keyboard className={`${iconClass} text-amber-300`} />;
-                                                    if (type === 'wait') return <Clock className={`${iconClass} text-slate-300`} />;
-                                                    if (type === 'wait_selector') return <Clock className={`${iconClass} text-orange-300`} />;
-                                                    if (type === 'scroll') return <ArrowDownUp className={`${iconClass} text-cyan-300`} />;
-                                                    if (type === 'javascript') return <Code className={`${iconClass} text-yellow-300`} />;
-                                                    if (type === 'csv') return <Table className={`${iconClass} text-emerald-300`} />;
-                                                    if (type === 'merge') return <Layers className={`${iconClass} text-emerald-200`} />;
-                                                    if (type === 'screenshot') return <Camera className={`${iconClass} text-emerald-300`} />;
-                                                    if (type === 'start') return <PlayCircle className={`${iconClass} text-emerald-300`} />;
-                                                    if (type === 'navigate') return <Navigation className={`${iconClass} text-blue-400`} />;
+                                                    const iconClass = "text-[12px]";
+                                                    if (type === 'if' || type === 'else') return <MaterialIcon name="call_split" className={`${iconClass} text-blue-400`} />;
+                                                    if (type === 'end') return <MaterialIcon name="subdirectory_arrow_right" className={`${iconClass} text-gray-500`} />;
+                                                    if (type === 'while' || type === 'repeat') return <MaterialIcon name="repeat" className={`${iconClass} text-amber-400`} />;
+                                                    if (type === 'foreach') return <MaterialIcon name="list" className={`${iconClass} text-amber-300`} />;
+                                                    if (type === 'on_error') return <MaterialIcon name="warning" className={`${iconClass} text-red-400`} />;
+                                                    if (type === 'set') return <MaterialIcon name="data_object" className={`${iconClass} text-green-400`} />;
+                                                    if (type === 'stop') return <MaterialIcon name="stop" className={`${iconClass} text-red-400`} />;
+                                                    if (type === 'click') return <MaterialIcon name="ads_click" className={`${iconClass} text-blue-300`} />;
+                                                    if (type === 'type') return <MaterialIcon name="text_format" className={`${iconClass} text-green-300`} />;
+                                                    if (type === 'hover') return <MaterialIcon name="my_location" className={`${iconClass} text-purple-300`} />;
+                                                    if (type === 'press') return <MaterialIcon name="keyboard" className={`${iconClass} text-amber-300`} />;
+                                                    if (type === 'wait') return <MaterialIcon name="schedule" className={`${iconClass} text-slate-300`} />;
+                                                    if (type === 'wait_selector') return <MaterialIcon name="schedule" className={`${iconClass} text-orange-300`} />;
+                                                    if (type === 'scroll') return <MaterialIcon name="swap_vert" className={`${iconClass} text-cyan-300`} />;
+                                                    if (type === 'javascript') return <MaterialIcon name="code" className={`${iconClass} text-yellow-300`} />;
+                                                    if (type === 'csv') return <MaterialIcon name="table_chart" className={`${iconClass} text-emerald-300`} />;
+                                                    if (type === 'merge') return <MaterialIcon name="layers" className={`${iconClass} text-emerald-200`} />;
+                                                    if (type === 'screenshot') return <MaterialIcon name="photo_camera" className={`${iconClass} text-emerald-300`} />;
+                                                    if (type === 'start') return <MaterialIcon name="play_circle" className={`${iconClass} text-emerald-300`} />;
+                                                    if (type === 'navigate') return <MaterialIcon name="navigation" className={`${iconClass} text-blue-400`} />;
                                                     return <span className="text-[9px] text-white/20">|</span>;
                                                 };
 
@@ -886,7 +860,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                                 aria-label="Delete action"
                                                                 title="Delete action"
                                                             >
-                                                                <X className="w-4 h-4" />
+                                                                <MaterialIcon name="close" className="text-base" />
                                                             </button>
                                                         </div>
                                                         {(action.type === 'click' || action.type === 'type' || action.type === 'hover' || action.type === 'wait_selector') && (
@@ -1650,7 +1624,7 @@ return JSON.stringify(links, null, 2);`}
                                                 }}
                                                 className={`px-4 py-2 border text-[9px] font-bold rounded-xl uppercase transition-all flex items-center gap-2 ${copied === 'endpoint' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
                                             >
-                                                {copied === 'endpoint' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                                {copied === 'endpoint' ? <MaterialIcon name="check" className="text-sm" /> : <MaterialIcon name="content_copy" className="text-sm" />}
                                                 {copied === 'endpoint' ? 'Copied' : 'Copy'}
                                             </button>
                                         </div>
@@ -1663,7 +1637,7 @@ return JSON.stringify(links, null, 2);`}
                                                 Object.entries(currentTask.variables).forEach(([n, d]) => cleanVars[n] = d.value);
                                                 void handleCopy(JSON.stringify({ variables: cleanVars }, null, 2), 'vars');
                                             }} className={`px-4 py-2 border text-[9px] font-bold rounded-xl uppercase transition-all flex items-center gap-2 ${copied === 'vars' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}>
-                                                {copied === 'vars' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                                {copied === 'vars' ? <MaterialIcon name="check" className="text-sm" /> : <MaterialIcon name="content_copy" className="text-sm" />}
                                                 {copied === 'vars' ? 'Copied' : 'Copy'}
                                             </button>
                                         </div>
@@ -1791,7 +1765,7 @@ return JSON.stringify(links, null, 2);`}
                         >
                             {isExecuting && currentTask.mode !== 'headful' ? (
                                 <div className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                            ) : <Play className="w-3 h-3 fill-black" />}
+                            ) : <MaterialIcon name="play_arrow" className="text-sm text-black" />}
                             <span>
                                 {isExecuting && currentTask.mode === 'headful' ? 'Stop Headful' : isExecuting ? 'Running...' : 'Run Task'}
                             </span>
@@ -1802,7 +1776,7 @@ return JSON.stringify(links, null, 2);`}
                                 className="w-12 h-12 rounded-2xl border border-white/10 text-white/80 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"
                                 title="Stop task"
                             >
-                                <Square className="w-4 h-4" />
+                                <MaterialIcon name="stop" className="text-base" />
                             </button>
                         )}
                     </div>

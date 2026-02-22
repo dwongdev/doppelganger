@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, Terminal } from 'lucide-react';
+import MaterialIcon from '../MaterialIcon';
 import { ConfirmRequest, Results, CaptureEntry } from '../../types';
 import { FixedSizeList, ListChildComponentProps } from 'react-window';
 import CaptureCard from '../CaptureCard';
@@ -290,7 +290,7 @@ const ResultsPane: React.FC<ResultsPaneProps> = ({ results, pinnedResults, isExe
         const boolValue = normalizeBoolean(value);
         if (boolValue !== null) {
             if (!boolValue) return '';
-            return <Check className="w-3 h-3 text-blue-400" />;
+            return <MaterialIcon name="check" className="text-xs text-blue-400" />;
         }
         return value ?? '';
     };
@@ -450,7 +450,7 @@ const ResultsPane: React.FC<ResultsPaneProps> = ({ results, pinnedResults, isExe
         return (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-20">
                 <div className="w-16 h-16 border border-white/10 rounded-full flex items-center justify-center">
-                    <Terminal className="w-6 h-6 text-white" />
+                    <MaterialIcon name="terminal" className="text-2xl text-white" />
                 </div>
                 <p className="text-[9px] font-bold uppercase tracking-[0.3em]">Ready</p>
             </div>
@@ -468,13 +468,12 @@ const ResultsPane: React.FC<ResultsPaneProps> = ({ results, pinnedResults, isExe
                         {activeResults?.finalUrl || activeResults?.url || ''}
                     </h2>
                 </div>
-                <div className={`px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-[0.2em] ${
-                    resultView === 'pinned'
+                <div className={`px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-[0.2em] ${resultView === 'pinned'
                         ? 'bg-amber-500/10 text-amber-300'
                         : isExecuting
                             ? 'bg-blue-500/10 text-blue-400 animate-pulse'
                             : 'bg-green-500/10 text-green-400'
-                }`}>
+                    }`}>
                     {resultView === 'pinned' ? 'Pinned' : (isExecuting ? 'Running' : 'Finished')}
                 </div>
             </div>
@@ -679,7 +678,7 @@ const ResultsPane: React.FC<ResultsPaneProps> = ({ results, pinnedResults, isExe
                             className={`px-3 py-2 border text-[9px] font-bold rounded-xl uppercase transition-all flex items-center gap-2 ${copied === 'data' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
                             title="Copy extracted data"
                         >
-                            {copied === 'data' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                            {copied === 'data' ? <MaterialIcon name="check" className="text-sm" /> : <MaterialIcon name="content_copy" className="text-sm" />}
                             {copied === 'data' ? 'Copied' : 'Copy'}
                         </button>
                     </div>

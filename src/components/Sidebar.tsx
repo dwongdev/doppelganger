@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Home, Settings as SettingsIcon, LogOut, History, Camera } from 'lucide-react';
+import MaterialIcon from './MaterialIcon';
 
 interface SidebarProps {
     onNavigate: (screen: 'dashboard' | 'editor' | 'settings' | 'executions' | 'captures') => void;
@@ -26,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onNewTask, onLogout, curr
                     title="New Task"
                     aria-label="New Task"
                 >
-                    <Plus className="w-6 h-6" />
+                    <MaterialIcon name="add" className="text-2xl" />
                 </button>
 
                 <button
@@ -35,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onNewTask, onLogout, curr
                     title="Dashboard"
                     aria-label="Dashboard"
                 >
-                    <Home className="w-6 h-6" />
+                    <MaterialIcon name="home" className="text-2xl" />
                 </button>
 
                 <button
@@ -44,7 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onNewTask, onLogout, curr
                     title="Settings"
                     aria-label="Settings"
                 >
-                    <SettingsIcon className="w-6 h-6" />
+                    <MaterialIcon name="settings" className="text-2xl" />
                 </button>
                 <button
                     onClick={() => onNavigate('executions')}
@@ -52,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onNewTask, onLogout, curr
                     title="Executions"
                     aria-label="Executions"
                 >
-                    <History className="w-6 h-6" />
+                    <MaterialIcon name="history" className="text-2xl" />
                 </button>
                 <button
                     onClick={() => onNavigate('captures')}
@@ -60,17 +60,27 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, onNewTask, onLogout, curr
                     title="Captures"
                     aria-label="Captures"
                 >
-                    <Camera className="w-6 h-6" />
+                    <MaterialIcon name="photo_camera" className="text-2xl" />
                 </button>
             </div>
 
+            <a
+                href="https://github.com/mnemosynestack/doppelganger"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-12 h-12 rounded-2xl flex items-center justify-center text-yellow-500 hover:bg-yellow-500/10 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500/50 mb-2"
+                title="Star on GitHub"
+                aria-label="Star on GitHub"
+            >
+                <MaterialIcon name="star" className="text-2xl" />
+            </a>
             <button
                 onClick={onLogout}
                 className="w-12 h-12 rounded-2xl flex items-center justify-center text-gray-500 hover:bg-red-500/10 hover:text-red-500 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                 title="Logout"
                 aria-label="Logout"
             >
-                <LogOut className="w-6 h-6" />
+                <MaterialIcon name="logout" className="text-2xl" />
             </button>
         </aside>
     );

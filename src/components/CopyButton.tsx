@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import MaterialIcon from "./MaterialIcon";
 import { copyToClipboard } from "../utils/clipboard";
 
 interface CopyButtonProps {
@@ -42,9 +42,9 @@ const CopyButton: React.FC<CopyButtonProps> = ({
       type="button"
     >
       {copied ? (
-        <Check className={iconClassName || "w-3 h-3 text-green-400"} />
+        <MaterialIcon name="check" className={iconClassName || "text-sm text-green-400"} />
       ) : (
-        <Copy className={iconClassName || "w-3 h-3"} />
+        <MaterialIcon name="content_copy" className={iconClassName || "text-sm"} />
       )}
       {label && <span>{copied ? "Copied" : label}</span>}
     </button>
